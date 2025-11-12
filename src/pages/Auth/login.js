@@ -217,9 +217,9 @@ export default function LoginPage() {
           style={styles.input}
         />
 
-        <div style={styles.forgot} onClick={() => navigate("/forgot")}>
+        {/* <div style={styles.forgot} onClick={() => navigate("/forgot")}>
           Forgot Password?
-        </div>
+        </div> */}
 
         {errorMessage && <div style={styles.error}>{errorMessage}</div>}
 

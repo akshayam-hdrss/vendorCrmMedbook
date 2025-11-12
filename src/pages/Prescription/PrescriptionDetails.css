@@ -1,0 +1,143 @@
+/* Main Container */
+.prescription-container {
+  padding: 40px 20px;
+  background: #f8fbff;
+  min-height: 100vh;
+}
+
+/* Title */
+.page-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 30px;
+  color: #007bff;
+  text-transform: uppercase;
+}
+
+/* Grid Layout - Card size increased */
+.prescription-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); /* 🔥 Increased width */
+  gap: 30px;
+}
+
+/* Card Style - Bigger card */
+.prescription-card {
+  background: #ffffff;
+  padding: 30px 25px;  /* 🔥 Increased padding */
+  border-radius: 14px;
+  box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.08);
+  min-height: 450px; /* 🔥 Increased height */
+  transition: all 0.3s ease-in-out;
+}
+
+.prescription-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0px 12px 35px rgba(0, 0, 0, 0.12);
+}
+
+/* Patient Name */
+.patient-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #0056b3;
+  margin-bottom: 10px;
+}
+
+/* Medicine Table */
+.medicine-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 15px;
+}
+
+.medicine-table th,
+.medicine-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.medicine-table th {
+  background: #eef4ff;
+  font-weight: bold;
+  color: #555;
+}
+
+/* Next Visit */
+.visit {
+  margin-top: 15px;
+  padding-top: 12px;
+  font-size: 15px;
+  border-top: 1px solid #eee;
+  color: #444;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .prescription-container {
+    padding: 20px 15px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .prescription-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .prescription-card {
+    padding: 20px 15px;
+    min-height: auto;
+    margin: 0 5px;
+  }
+  
+  .prescription-card:hover {
+    transform: none;
+  }
+  
+  .medicine-table {
+    font-size: 14px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .medicine-table th,
+  .medicine-table td {
+    padding: 6px 4px;
+  }
+  
+  .visit {
+    font-size: 14px;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .prescription-container {
+    padding: 15px 10px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .prescription-card {
+    padding: 15px 12px;
+  }
+  
+  .medicine-table {
+    font-size: 12px;
+  }
+  
+  .medicine-table th,
+  .medicine-table td {
+    padding: 4px 3px;
+  }
+}

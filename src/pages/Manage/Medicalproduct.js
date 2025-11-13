@@ -21,14 +21,16 @@ export default function Medicalproduct() {
 
   // ✅ Fetch products
   const fetchProducts = async () => {
-    if (!doctorId) {
-      console.error("User ID not found!");
-      return;
-    }
+    if (!doctorId) return console.error("User ID not found!");
 
     try {
       const res = await axios.get(`${API_URL}/${doctorId}`);
-      setProducts(res.data);
+      // add a local "price" field if not available in API
+      const withPrice = res.data.map((p) => ({
+        ...p,
+        price: p.price || "", // fallback local price
+      }));
+      setProducts(withPrice);
     } catch (err) {
       console.error(err);
     }
@@ -38,24 +40,34 @@ export default function Medicalproduct() {
     fetchProducts();
   }, []);
 
-  // ✅ Add / Update Product
+  // ✅ Add / Update Product (price handled locally)
   const handleSubmit = async () => {
     if (!productName.trim()) return alert("Product Name required!");
 
     try {
       if (editId) {
+        // Update local product without sending price to backend
         await axios.put(`${API_URL}/${editId}`, {
           productName,
           category,
-          price,
         });
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === editId ? { ...p, productName, category, price } : p
+          )
+        );
       } else {
-        await axios.post(API_URL, {
+        const res = await axios.post(API_URL, {
           doctorId,
           productName,
           category,
-          price,
         });
+        // Add locally with price
+        const newProduct = {
+          ...res.data,
+          price,
+        };
+        setProducts((prev) => [...prev, newProduct]);
       }
 
       // reset form
@@ -64,7 +76,6 @@ export default function Medicalproduct() {
       setPrice("");
       setEditId(null);
       setShowModal(false);
-      fetchProducts();
     } catch (err) {
       console.error(err);
     }
@@ -72,11 +83,12 @@ export default function Medicalproduct() {
 
   // ✅ Delete
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
 
     try {
       await axios.delete(`${API_URL}/${id}`);
-      fetchProducts();
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -93,9 +105,9 @@ export default function Medicalproduct() {
 
   return (
     <div className="container mt-4 p-4 bg-white rounded shadow-sm">
+      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h3 className="text-danger fw-bold mb-0">Medical Products</h3>
-
         <Button
           variant="success"
           onClick={() => {
@@ -111,24 +123,67 @@ export default function Medicalproduct() {
         </Button>
       </div>
 
-      <Table striped bordered hover responsive className="align-middle">
-        <thead className="table-dark text-center">
+      {/* Table */}
+      <Table
+        striped
+        bordered
+        hover
+        responsive
+        className="align-middle text-center"
+      >
+        <thead className="table-dark">
           <tr>
             <th>SI NO</th>
             <th>Product Name</th>
             <th>Category</th>
-            {canSeePrice && <th>Price</th>} {/* ✅ show heading */}
+            {canSeePrice && <th>Price</th>}
             <th style={{ width: "150px" }}>Actions</th>
           </tr>
         </thead>
-        <tbody className="text-center">
+        <tbody>
           {products.length > 0 ? (
             products.map((item, index) => (
-              <tr key={item.id}>
+              <tr key={item.id || index}>
                 <td>{index + 1}</td>
                 <td>{item.productName}</td>
                 <td>{item.category || "—"}</td>
-                {canSeePrice && <td>{item.price ? `₹${item.price}` : "—"}</td>}
+                {canSeePrice && (
+                  <td>
+                    {item.price ? (
+                      <>
+                        ₹
+                        <Form.Control
+                          type="number"
+                          value={item.price}
+                          onChange={(e) => {
+                            const newPrice = e.target.value;
+                            setProducts((prev) =>
+                              prev.map((p, i) =>
+                                i === index ? { ...p, price: newPrice } : p
+                              )
+                            );
+                          }}
+                          className="d-inline-block w-50 ms-2"
+                        />
+                      </>
+                    ) : (
+                      <Form.Control
+                        type="number"
+                        placeholder="Add Price"
+                        value={item.price}
+                        onChange={(e) => {
+                          const newPrice = e.target.value;
+                          setProducts((prev) =>
+                            prev.map((p, i) =>
+                              i === index ? { ...p, price: newPrice } : p
+                            )
+                          );
+                        }}
+                        className="d-inline-block w-50"
+                      />
+                    )}
+                  </td>
+                )}
                 <td>
                   <Button
                     variant="info"
@@ -163,7 +218,7 @@ export default function Medicalproduct() {
         </tbody>
       </Table>
 
-      {/* ✅ Modal for Add/Edit */}
+      {/* Modal for Add/Edit */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton className="bg-primary text-white">
           <Modal.Title>
@@ -193,7 +248,6 @@ export default function Medicalproduct() {
             </Form.Select>
           </Form.Group>
 
-          {/* ✅ show price input only for lab/product users */}
           {canSeePrice && (
             <Form.Group className="mb-3">
               <Form.Label className="fw-semibold">Price</Form.Label>

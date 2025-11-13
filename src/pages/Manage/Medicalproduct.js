@@ -16,7 +16,7 @@ export default function Medicalproduct() {
 
   const API_URL = "https://medbook-backend-1.onrender.com/api/medical-product";
 
-  // ✅ check who can see price
+  // ✅ Only Pharmacy or Lab users can see prices
   const canSeePrice = storedUser?.isPharmacy || storedUser?.isLab;
 
   // ✅ Fetch products
@@ -25,14 +25,14 @@ export default function Medicalproduct() {
 
     try {
       const res = await axios.get(`${API_URL}/${doctorId}`);
-      // add a local "price" field if not available in API
-      const withPrice = res.data.map((p) => ({
+      // Ensure price is always a number (avoid string issues)
+      const formatted = res.data.map((p) => ({
         ...p,
-        price: p.price || "", // fallback local price
+        price: parseFloat(p.price) || 0,
       }));
-      setProducts(withPrice);
+      setProducts(formatted);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching products:", err);
     }
   };
 
@@ -40,61 +40,56 @@ export default function Medicalproduct() {
     fetchProducts();
   }, []);
 
-  // ✅ Add / Update Product (price handled locally)
+  // ✅ Add or Update product (with price conversion)
   const handleSubmit = async () => {
-    if (!productName.trim()) return alert("Product Name required!");
+    if (!productName.trim()) return alert("Product Name is required!");
 
     try {
+      const numericPrice = price ? parseFloat(price) : 0;
+
       if (editId) {
-        // Update local product without sending price to backend
+        // Update
         await axios.put(`${API_URL}/${editId}`, {
           productName,
-          category,
+          category: category || "pharmacy",
+          price: numericPrice,
         });
-        setProducts((prev) =>
-          prev.map((p) =>
-            p.id === editId ? { ...p, productName, category, price } : p
-          )
-        );
       } else {
-        const res = await axios.post(API_URL, {
+        // Add new
+        await axios.post(API_URL, {
           doctorId,
           productName,
-          category,
+          category: category || "pharmacy",
+          price: numericPrice,
         });
-        // Add locally with price
-        const newProduct = {
-          ...res.data,
-          price,
-        };
-        setProducts((prev) => [...prev, newProduct]);
       }
 
-      // reset form
+      // Reset and refresh
       setProductName("");
       setCategory("pharmacy");
       setPrice("");
       setEditId(null);
       setShowModal(false);
+      fetchProducts();
     } catch (err) {
-      console.error(err);
+      console.error("Error saving product:", err);
     }
   };
 
-  // ✅ Delete
+  // ✅ Delete product
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
 
     try {
       await axios.delete(`${API_URL}/${id}`);
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      fetchProducts();
     } catch (err) {
-      console.error(err);
+      console.error("Error deleting product:", err);
     }
   };
 
-  // ✅ Edit
+  // ✅ Edit product
   const handleEdit = (item) => {
     setProductName(item.productName);
     setCategory(item.category || "pharmacy");
@@ -110,6 +105,7 @@ export default function Medicalproduct() {
         <h3 className="text-danger fw-bold mb-0">Medical Products</h3>
         <Button
           variant="success"
+          className="fw-semibold"
           onClick={() => {
             setEditId(null);
             setProductName("");
@@ -117,13 +113,12 @@ export default function Medicalproduct() {
             setPrice("");
             setShowModal(true);
           }}
-          className="fw-semibold"
         >
           ➕ Add Product
         </Button>
       </div>
 
-      {/* Table */}
+      {/* Product Table */}
       <Table
         striped
         bordered
@@ -136,10 +131,11 @@ export default function Medicalproduct() {
             <th>SI NO</th>
             <th>Product Name</th>
             <th>Category</th>
-            {canSeePrice && <th>Price</th>}
+            {canSeePrice && <th>Price (₹)</th>}
             <th style={{ width: "150px" }}>Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {products.length > 0 ? (
             products.map((item, index) => (
@@ -147,43 +143,15 @@ export default function Medicalproduct() {
                 <td>{index + 1}</td>
                 <td>{item.productName}</td>
                 <td>{item.category || "—"}</td>
+
                 {canSeePrice && (
                   <td>
-                    {item.price ? (
-                      <>
-                        ₹
-                        <Form.Control
-                          type="number"
-                          value={item.price}
-                          onChange={(e) => {
-                            const newPrice = e.target.value;
-                            setProducts((prev) =>
-                              prev.map((p, i) =>
-                                i === index ? { ...p, price: newPrice } : p
-                              )
-                            );
-                          }}
-                          className="d-inline-block w-50 ms-2"
-                        />
-                      </>
-                    ) : (
-                      <Form.Control
-                        type="number"
-                        placeholder="Add Price"
-                        value={item.price}
-                        onChange={(e) => {
-                          const newPrice = e.target.value;
-                          setProducts((prev) =>
-                            prev.map((p, i) =>
-                              i === index ? { ...p, price: newPrice } : p
-                            )
-                          );
-                        }}
-                        className="d-inline-block w-50"
-                      />
-                    )}
+                    {item.price > 0
+                      ? `₹${parseFloat(item.price).toFixed(2)}`
+                      : "—"}
                   </td>
                 )}
+
                 <td>
                   <Button
                     variant="info"
@@ -208,7 +176,7 @@ export default function Medicalproduct() {
           ) : (
             <tr>
               <td
-                colSpan={canSeePrice ? "5" : "4"}
+                colSpan={canSeePrice ? 5 : 4}
                 className="text-muted text-center py-3"
               >
                 No Products Found
@@ -218,7 +186,7 @@ export default function Medicalproduct() {
         </tbody>
       </Table>
 
-      {/* Modal for Add/Edit */}
+      {/* Add / Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton className="bg-primary text-white">
           <Modal.Title>
@@ -250,7 +218,7 @@ export default function Medicalproduct() {
 
           {canSeePrice && (
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold">Price</Form.Label>
+              <Form.Label className="fw-semibold">Price (₹)</Form.Label>
               <Form.Control
                 type="number"
                 placeholder="Enter price"

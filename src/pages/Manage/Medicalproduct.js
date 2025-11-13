@@ -9,11 +9,15 @@ export default function Medicalproduct() {
 
   const [products, setProducts] = useState([]);
   const [productName, setProductName] = useState("");
-  const [category, setCategory] = useState("pharmacy"); // ✅ New field
+  const [category, setCategory] = useState("pharmacy");
+  const [price, setPrice] = useState("");
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const API_URL = "https://medbook-backend-1.onrender.com/api/medical-product";
+
+  // ✅ check who can see price
+  const canSeePrice = storedUser?.isPharmacy || storedUser?.isLab;
 
   // ✅ Fetch products
   const fetchProducts = async () => {
@@ -34,7 +38,7 @@ export default function Medicalproduct() {
     fetchProducts();
   }, []);
 
-  // ✅ Add / Update
+  // ✅ Add / Update Product
   const handleSubmit = async () => {
     if (!productName.trim()) return alert("Product Name required!");
 
@@ -42,19 +46,22 @@ export default function Medicalproduct() {
       if (editId) {
         await axios.put(`${API_URL}/${editId}`, {
           productName,
-          category, // ✅ send category when updating
+          category,
+          price,
         });
       } else {
         await axios.post(API_URL, {
           doctorId,
           productName,
-          category, // ✅ send category when adding
+          category,
+          price,
         });
       }
 
-      // Reset modal state
+      // reset form
       setProductName("");
       setCategory("pharmacy");
+      setPrice("");
       setEditId(null);
       setShowModal(false);
       fetchProducts();
@@ -78,57 +85,65 @@ export default function Medicalproduct() {
   // ✅ Edit
   const handleEdit = (item) => {
     setProductName(item.productName);
-    setCategory(item.category || "pharmacy"); // ✅ prefill if available
+    setCategory(item.category || "pharmacy");
+    setPrice(item.price || "");
     setEditId(item.id);
     setShowModal(true);
   };
 
   return (
-    <div className="container mt-4">
-      <h3 className="text-danger fw-bold mb-3">Medical Products</h3>
+    <div className="container mt-4 p-4 bg-white rounded shadow-sm">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h3 className="text-danger fw-bold mb-0">Medical Products</h3>
 
-      <Button
-        variant="success"
-        className="mb-3"
-        onClick={() => {
-          setEditId(null);
-          setProductName("");
-          setCategory("pharmacy");
-          setShowModal(true);
-        }}
-      >
-        ➕ Add Product
-      </Button>
+        <Button
+          variant="success"
+          onClick={() => {
+            setEditId(null);
+            setProductName("");
+            setCategory("pharmacy");
+            setPrice("");
+            setShowModal(true);
+          }}
+          className="fw-semibold"
+        >
+          ➕ Add Product
+        </Button>
+      </div>
 
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
+      <Table striped bordered hover responsive className="align-middle">
+        <thead className="table-dark text-center">
           <tr>
             <th>SI NO</th>
             <th>Product Name</th>
-            <th>Category</th> {/* ✅ New column */}
-            <th width="150px">Actions</th>
+            <th>Category</th>
+            {canSeePrice && <th>Price</th>} {/* ✅ show heading */}
+            <th style={{ width: "150px" }}>Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="text-center">
           {products.length > 0 ? (
             products.map((item, index) => (
               <tr key={item.id}>
                 <td>{index + 1}</td>
                 <td>{item.productName}</td>
-                <td>{item.category || "—"}</td> {/* ✅ Display category */}
+                <td>{item.category || "—"}</td>
+                {canSeePrice && <td>{item.price ? `₹${item.price}` : "—"}</td>}
                 <td>
                   <Button
                     variant="info"
+                    size="sm"
                     className="me-2"
-                    onClick={() => handleEdit(item)}
                     title="Edit"
+                    onClick={() => handleEdit(item)}
                   >
                     <FaEdit />
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => handleDelete(item.id)}
+                    size="sm"
                     title="Delete"
+                    onClick={() => handleDelete(item.id)}
                   >
                     <FaTrash />
                   </Button>
@@ -137,7 +152,10 @@ export default function Medicalproduct() {
             ))
           ) : (
             <tr>
-              <td colSpan="4" className="text-center text-muted">
+              <td
+                colSpan={canSeePrice ? "5" : "4"}
+                className="text-muted text-center py-3"
+              >
                 No Products Found
               </td>
             </tr>
@@ -147,15 +165,15 @@ export default function Medicalproduct() {
 
       {/* ✅ Modal for Add/Edit */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="bg-primary text-white">
           <Modal.Title>
             {editId ? "Edit Product" : "Add New Product"}
           </Modal.Title>
         </Modal.Header>
 
-        <Modal.Body>
+        <Modal.Body className="bg-light">
           <Form.Group className="mb-3">
-            <Form.Label>Product Name</Form.Label>
+            <Form.Label className="fw-semibold">Product Name</Form.Label>
             <Form.Control
               type="text"
               placeholder="Enter medicine name"
@@ -164,9 +182,8 @@ export default function Medicalproduct() {
             />
           </Form.Group>
 
-          {/* ✅ New Dropdown for Category */}
-          <Form.Group>
-            <Form.Label>Category</Form.Label>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">Category</Form.Label>
             <Form.Select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -175,6 +192,19 @@ export default function Medicalproduct() {
               <option value="lab-diagnosis">Lab & Diagnosis</option>
             </Form.Select>
           </Form.Group>
+
+          {/* ✅ show price input only for lab/product users */}
+          {canSeePrice && (
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Price</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter price"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </Form.Group>
+          )}
         </Modal.Body>
 
         <Modal.Footer>

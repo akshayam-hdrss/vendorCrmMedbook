@@ -35,6 +35,12 @@ const Prescription = () => {
 
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const doctorId = storedUser?.id;
+  const IsDoctor = storedUser?.isDoctor;
+  console.log(IsDoctor);
+  const islab = storedUser?.isLab;
+  const ispharmacy = storedUser?.isPharmacy;
+  const shouldShowPrices = IsDoctor !== 1;
+  console.log(shouldShowPrices);
 
   const prescriptionRef = useRef(null);
 
@@ -52,13 +58,13 @@ const Prescription = () => {
   const [currentStep, setCurrentStep] = useState("pharmacy"); // "main", "pharmacy", "lab"
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
- const [favorites, setFavorites] = useState({}); 
+  const [favorites, setFavorites] = useState({});
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // ✅ Autofill patient data from appointment
   const [patientDetails, setPatientDetails] = useState({
     name: appointment?.patientName || appointment?.username || "",
-    address: "",
+    // address: "",
     age: appointment?.patientAge || "",
     date: appointment?.date
       ? new Date(appointment.date).toISOString().split("T")[0]
@@ -78,8 +84,15 @@ const Prescription = () => {
       const response = await axios.get(
         `https://medbook-backend-1.onrender.com/api/medical-product/${doctorId}`
       );
-      const products = response.data.map((item) => item.productName);
+
+      // Only pick name + price
+      const products = response.data.map((item) => ({
+        name: item.productName,
+        price: item.price,
+      }));
+
       setavailableMedicines(products);
+      console.log(products);
     } catch (error) {
       console.error("Error fetching medicine suggestions:", error);
     }
@@ -110,16 +123,17 @@ const Prescription = () => {
   };
 
   const handleSelectMedicine = (medicine) => {
-    if (!medicineList.find((m) => m.name === medicine)) {
+    if (!medicineList.find((m) => m.name === medicine.name)) {
       setMedicineList([
         ...medicineList,
         {
-          name: medicine,
+          name: medicine.name,
           breakfast: false,
           lunch: false,
           dinner: false,
           beforeFood: true,
           quantity: 1,
+          price: medicine.price,
         },
       ]);
     }
@@ -127,18 +141,20 @@ const Prescription = () => {
   };
 
   const fetchFavorites = async () => {
-  try {
-    const response = await axios.get(`https://medbook-backend-1.onrender.com/api/medical-favourites/${doctorId}`);
-    // Convert array to object: { serviceId: id }
-    const favMap = {};
-    response.data.forEach(fav => {
-      favMap[fav.serviceId] = fav.id;
-    });
-    setFavorites(favMap);
-  } catch (error) {
-    console.error("Error fetching favorites:", error);
-  }
-};
+    try {
+      const response = await axios.get(
+        `https://medbook-backend-1.onrender.com/api/medical-favourites/${doctorId}`
+      );
+      // Convert array to object: { serviceId: id }
+      const favMap = {};
+      response.data.forEach((fav) => {
+        favMap[fav.serviceId] = fav.id;
+      });
+      setFavorites(favMap);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  };
 
   const submitPrescription = async () => {
     if (!patientDetails.name || !patientDetails.age) {
@@ -173,18 +189,22 @@ const Prescription = () => {
       setMessage("");
       setLoading(true);
 
-      const res = await axios.post("https://medbook-backend-1.onrender.com/api/prescription", payload);
+      const res = await axios.post(
+        "https://medbook-backend-1.onrender.com/api/prescription",
+        payload
+      );
 
       console.log("Prescription saved:", res.data);
 
       console.log("Appointment ID:", appointment?.id);
 
       if (appointment?.id) {
-
-      await axios.put(`https://medbook-backend-1.onrender.com/api/bookings/addprescription/${appointment?.id}`, {
-        prescriptionId: res.data.id,
-      });
-
+        await axios.put(
+          `https://medbook-backend-1.onrender.com/api/bookings/addprescription/${appointment?.id}`,
+          {
+            prescriptionId: res.data.id,
+          }
+        );
       }
 
       setMessage("✅ Saved Successfully! Downloading PDF...");
@@ -192,6 +212,9 @@ const Prescription = () => {
 
       // Show send options popup after PDF download
       setShowSendOptions(true);
+      if (ispharmacy || islab) {
+        setShowSendOptions(false); // Hide if user is pharmacy or lab
+      }
       // setCurrentStep("main");
 
       setMedicineList([]);
@@ -228,36 +251,40 @@ const Prescription = () => {
   };
 
   const handleToggleFavorite = async (serviceId) => {
-  try {
-    // If already a favorite → DELETE it
-    if (favorites[serviceId]) {
-      const favoriteId = favorites[serviceId];
-      await axios.delete(`https://medbook-backend-1.onrender.com/api/medical-favourites/${favoriteId}`);
-      
-      // Remove from state
-      const updatedFavorites = { ...favorites };
-      delete updatedFavorites[serviceId];
-      setFavorites(updatedFavorites);
-    } 
-    // Otherwise → POST to add it
-    else {
-      const payload = {
-        doctorId: doctorId,
-        serviceId: serviceId,
-      };
-      const response = await axios.post("https://medbook-backend-1.onrender.com/api/medical-favourites", payload);
+    try {
+      // If already a favorite → DELETE it
+      if (favorites[serviceId]) {
+        const favoriteId = favorites[serviceId];
+        await axios.delete(
+          `https://medbook-backend-1.onrender.com/api/medical-favourites/${favoriteId}`
+        );
 
-      // response.data.id is the new favorite record ID
-      setFavorites((prev) => ({
-        ...prev,
-        [serviceId]: response.data.id
-      }));
+        // Remove from state
+        const updatedFavorites = { ...favorites };
+        delete updatedFavorites[serviceId];
+        setFavorites(updatedFavorites);
+      }
+      // Otherwise → POST to add it
+      else {
+        const payload = {
+          doctorId: doctorId,
+          serviceId: serviceId,
+        };
+        const response = await axios.post(
+          "https://medbook-backend-1.onrender.com/api/medical-favourites",
+          payload
+        );
+
+        // response.data.id is the new favorite record ID
+        setFavorites((prev) => ({
+          ...prev,
+          [serviceId]: response.data.id,
+        }));
+      }
+    } catch (error) {
+      console.error("❌ Error toggling favorite:", error);
     }
-  } catch (error) {
-    console.error("❌ Error toggling favorite:", error);
-  }
-};
-
+  };
 
   /* ✅ PDF Generator - High Resolution */
   const generatePDF = async () => {
@@ -531,9 +558,7 @@ const Prescription = () => {
                   selectedDestination?.userId === destination.userId
                     ? "selected"
                     : ""
-                } ${
-                  favorites[destination.userId] ? "favorite" : ""
-                }`}
+                } ${favorites[destination.userId] ? "favorite" : ""}`}
                 onClick={() => setSelectedDestination(destination)}
               >
                 <Card.Body>
@@ -548,13 +573,11 @@ const Prescription = () => {
                       top: "10px",
                       right: "15px",
                       cursor: "pointer",
-                      color: favorites[destination.userId]
-                        ? "red"
-                        : "#ccc",
+                      color: favorites[destination.userId] ? "red" : "#ccc",
                       fontSize: "20px",
                     }}
                   >
-                    {favorites[destination.userId]? (
+                    {favorites[destination.userId] ? (
                       <FaHeart />
                     ) : (
                       <FaRegHeart />
@@ -761,14 +784,18 @@ const Prescription = () => {
           {search && (
             <div className="search-suggestions">
               {availableMedicines
-                .filter((m) => m.toLowerCase().includes(search.toLowerCase()))
+                .filter((m) =>
+                  m.name.toLowerCase().includes(search.toLowerCase())
+                )
                 .map((medicine, idx) => (
                   <div
                     key={idx}
                     className="suggestion-item"
                     onClick={() => handleSelectMedicine(medicine)}
                   >
-                    {medicine}
+                    {medicine.name}
+                    {shouldShowPrices && ` - ₹${medicine.price}`}{" "}
+                    {/* Fixed: render string, not object */}
                   </div>
                 ))}
             </div>
@@ -786,14 +813,16 @@ const Prescription = () => {
                 <th>Dinner</th>
                 <th>Food</th>
                 <th>Qty</th>
+                {shouldShowPrices && <th>Price</th>}
+                {shouldShowPrices && <th>Total</th>}
                 <th></th>
               </tr>
             </thead>
-
             <tbody>
               {medicineList.map((medicine, index) => (
                 <tr key={index}>
                   <td>{medicine.name}</td>
+
                   {["breakfast", "lunch", "dinner"].map((meal) => (
                     <td key={meal}>
                       <Form.Check
@@ -805,7 +834,6 @@ const Prescription = () => {
                       />
                     </td>
                   ))}
-
                   <td>
                     <Form.Check
                       type="radio"
@@ -833,6 +861,14 @@ const Prescription = () => {
                     </Button>
                   </td>
 
+                  {/* ➕ PRICE COLUMN - Simple display none for doctorId 1 */}
+                  {shouldShowPrices && <td>₹{medicine.price}</td>}
+
+                  {/* ➕ TOTAL PRICE - Simple display none for doctorId 1 */}
+                  {shouldShowPrices && (
+                    <td>₹{(medicine.price * medicine.quantity).toFixed(2)}</td>
+                  )}
+
                   <td>
                     <Button
                       variant="danger"
@@ -847,6 +883,39 @@ const Prescription = () => {
             </tbody>
           </Table>
         )}
+        {shouldShowPrices &&
+          medicineList.length > 0 &&
+          (() => {
+            const baseAmount = medicineList.reduce(
+              (total, medicine) => total + medicine.price * medicine.quantity,
+              0
+            );
+            const gstAmount = baseAmount * 0.18;
+            const totalWithGst = baseAmount + gstAmount;
+
+            return (
+              <div
+                className="text-end mt-3 p-3 bg-light rounded"
+                style={{ maxWidth: "300px", marginLeft: "auto" }}
+              >
+                <div className="d-flex justify-content-between mb-1">
+                  <span>Subtotal:</span>
+                  <span>₹{baseAmount.toFixed(2)}</span>
+                </div>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>GST (18%):</span>
+                  <span>₹{gstAmount.toFixed(2)}</span>
+                </div>
+                <hr className="my-2" />
+                <div className="d-flex justify-content-between mb-0">
+                  <strong>Grand Total:</strong>
+                  <strong className="text-success fs-5">
+                    ₹{totalWithGst.toFixed(2)}
+                  </strong>
+                </div>
+              </div>
+            );
+          })()}
 
         {/* Next Visit Date */}
         <div className="treatment-section">
@@ -889,7 +958,6 @@ const Prescription = () => {
           {loading ? "Saving..." : "Submit Prescription & Download PDF"}
         </Button>
       </div>
-
       {/* 🎯 PRINTABLE SECTION (For PDF only - High Resolution Optimized) */}
       <div
         ref={prescriptionRef}
@@ -937,9 +1005,9 @@ const Prescription = () => {
             <div>
               <strong>Date:</strong> {patientDetails.date}
             </div>
-            <div>
+            {/* <div>
               <strong>Address:</strong> {patientDetails.address}
-            </div>
+            </div> */}
             <div className="full-width">
               <strong>Diagnosis:</strong> {patientDetails.diagnosis}
             </div>
@@ -960,6 +1028,7 @@ const Prescription = () => {
                   <th>Dinner</th>
                   <th>Food Timing</th>
                   <th>Quantity</th>
+                  {shouldShowPrices && <th>Price</th>}
                 </tr>
               </thead>
               <tbody>
@@ -980,18 +1049,51 @@ const Prescription = () => {
                       {medicine.beforeFood ? "Before Food" : "After Food"}
                     </td>
                     <td className="text-center">{medicine.quantity}</td>
+                    {shouldShowPrices && (
+                      <td className="text-center">₹{medicine.price}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {/* GST Calculation for PDF */}
+            {shouldShowPrices &&
+              medicineList.length > 0 &&
+              (() => {
+                const baseAmount = medicineList.reduce(
+                  (total, medicine) =>
+                    total + medicine.price * medicine.quantity,
+                  0
+                );
+                const gstAmount = baseAmount * 0.18;
+                const totalWithGst = baseAmount + gstAmount;
+
+                return (
+                  <div className="print-price-summary">
+                    <div className="print-price-row">
+                      <span>Subtotal:</span>
+                      <span>₹{baseAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="print-price-row">
+                      <span>GST (18%):</span>
+                      <span>₹{gstAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="print-price-row total">
+                      <strong>Grand Total:</strong>
+                      <strong>₹{totalWithGst.toFixed(2)}</strong>
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         )}
 
         <div className="print-next-visit">
           <strong>Next Visit Date:</strong> {nextVisitDate || "N/A"}
         </div>
-      </div>
-
+      </div>{" "}
+      {/* This closes the printable-section div */}
       {/* Send Options Modal */}
       <Modal
         show={showSendOptions}
@@ -1015,6 +1117,29 @@ const Prescription = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <style>
+        {`.print-price-summary {
+  margin-top: 20px;
+  padding: 15px;
+  border-top: 2px solid #333;
+  text-align: right;
+  font-family: Arial, sans-serif;
+}
+
+.print-price-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  padding: 2px 0;
+}
+
+.print-price-row.total {
+  border-top: 1px solid #333;
+  padding-top: 8px;
+  margin-top: 8px;
+  font-size: 16px;
+}`}
+      </style>
     </div>
   );
 };

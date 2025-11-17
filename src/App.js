@@ -10,6 +10,7 @@ import "./App.css";
 import PrescriptionDetails from "./pages/Prescription/PrescriptionDetails";
 import Manage from "./pages/Manage/Manage";
 import Medicalproduct from "./pages/Manage/Medicalproduct";
+import ReceivedRx from "./pages/Recevied-Rx/receivedRx";
 import Productpage3 from "./pages/Products/Products3/ProductPage3";
 import ProductPage4 from "./pages/Products/Products4/ProductPage4";
 import Productpage2 from "./pages/Products/Products2/Productpage2";
@@ -84,6 +85,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Productpage2 />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/received-rx"
+              element={
+                <ProtectedRoute>
+                  <ReceivedRx />
                 </ProtectedRoute>
               }
             />

@@ -111,7 +111,21 @@ export default function Sidebar() {
               </li>
             </>
           )}
+             <li>
+                <NavLink
+                  to="/received-rx"
+                  className={({ isActive }) =>
+                    isActive ? "sidebar-link active" : "sidebar-link"
+                  }
+                >
+                  <FaFilePrescription className="me-2" /> Received-Rx
+                </NavLink>
+              </li>
         </ul>
+
+
+
+      
 
         {/* 🔴 Logout button */}
         <div className="logout-section">

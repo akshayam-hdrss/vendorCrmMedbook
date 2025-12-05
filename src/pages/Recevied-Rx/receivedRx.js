@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ReceivedRx = () => {
   const [received, setReceived] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleOpenPrescription = (item) => {
+    // Navigate to Prescription page and pass the full appointment object
+    navigate("/prescription", { state: { appointment: item } });
+  };
 
   const fetchReceived = async () => {
     try {
@@ -28,7 +35,8 @@ const ReceivedRx = () => {
 
   // ---------------- UI States ----------------
   if (loading) return <h3 style={{ textAlign: "center" }}>Loading...</h3>;
-  if (error) return <h4 style={{ textAlign: "center", color: "red" }}>{error}</h4>;
+  if (error)
+    return <h4 style={{ textAlign: "center", color: "red" }}>{error}</h4>;
   if (received.length === 0)
     return <h4 style={{ textAlign: "center" }}>No prescriptions found.</h4>;
 
@@ -59,6 +67,7 @@ const ReceivedRx = () => {
             margin-bottom: 25px;
             border-left: 6px solid #b9090fff;
             transition: 0.3s ease;
+            cursor: pointer;
           }
 
           .rx-card:hover {
@@ -159,15 +168,32 @@ const ReceivedRx = () => {
         <h1 className="rx-title">Received Rx</h1>
 
         {received.map((item, index) => (
-          <div key={index} className="rx-card">
+          <div
+            key={index}
+            className="rx-card"
+            onClick={() => handleOpenPrescription(item)}
+          >
             <h2 className="rx-patient">{item.patientName}</h2>
 
             <div className="rx-info">
-              <p><strong>Age:</strong> {item.age}</p>
-              <p><strong>Date:</strong> {new Date(item.date).toLocaleDateString()}</p>
+              <p>
+                <strong>Age:</strong> {item.age}
+              </p>
+              <p>
+                <strong>Date:</strong>{" "}
+                {new Date(item.date).toLocaleDateString()}
+              </p>
 
-              {item.address && <p><strong>Address:</strong> {item.address}</p>}
-              {item.description && <p><strong>Description:</strong> {item.description}</p>}
+              {item.address && (
+                <p>
+                  <strong>Address:</strong> {item.address}
+                </p>
+              )}
+              {item.description && (
+                <p>
+                  <strong>Description:</strong> {item.description}
+                </p>
+              )}
 
               <p>
                 <strong>Next Visit:</strong>{" "}
@@ -180,13 +206,23 @@ const ReceivedRx = () => {
             <div className="rx-prescription-box">
               {item.prescription.map((med, i) => (
                 <div key={i} className="rx-med-item">
-                  <p><strong>Medicine:</strong> {med.medicine}</p>
-                  <p><strong>Quantity:</strong> {med.quantity}</p>
-                  <p><strong>Before/After Food:</strong> {med.beforeAfterFood}</p>
+                  <p>
+                    <strong>Medicine:</strong> {med.medicine}
+                  </p>
+                  <p>
+                    <strong>Quantity:</strong> {med.quantity}
+                  </p>
+                  <p>
+                    <strong>Before/After Food:</strong> {med.beforeAfterFood}
+                  </p>
 
                   <p>
                     <strong>Time:</strong>{" "}
-                    {[med.breakfast && "Breakfast", med.lunch && "Lunch", med.dinner && "Dinner"]
+                    {[
+                      med.breakfast && "Breakfast",
+                      med.lunch && "Lunch",
+                      med.dinner && "Dinner",
+                    ]
                       .filter(Boolean)
                       .join(", ") || "No specific time"}
                   </p>

@@ -78,7 +78,36 @@ const Prescription = () => {
     fetchLabs();
     fetchPharmacies();
     fetchFavorites();
-  }, []);
+
+    // If this page was opened from a received prescription card, prefill medicines
+    if (appointment?.prescription && appointment.prescription.length) {
+      const mapped = appointment.prescription.map((p) => ({
+        name: p.medicine,
+        breakfast: !!p.breakfast,
+        lunch: !!p.lunch,
+        dinner: !!p.dinner,
+        beforeFood: p.beforeAfterFood === "before",
+        quantity: p.quantity || 1,
+        price: p.price || 0,
+      }));
+      setMedicineList(mapped);
+    }
+  }, [appointment]);
+
+  // When available medicine suggestions load, fill any missing prices
+  useEffect(() => {
+    if (availableMedicines.length > 0 && medicineList.length > 0) {
+      setMedicineList((prev) =>
+        prev.map((m) => {
+          // if price already present and non-zero, keep it
+          if (m.price && m.price > 0) return m;
+          const found = availableMedicines.find((a) => a.name === m.name);
+          return found ? { ...m, price: found.price } : m;
+        })
+      );
+    }
+    // we intentionally do not include medicineList in deps to avoid looping
+  }, [availableMedicines]);
 
   const fetchMedicineSuggestions = async () => {
     try {

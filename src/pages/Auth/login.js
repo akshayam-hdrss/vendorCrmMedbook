@@ -68,7 +68,7 @@ export default function LoginPage() {
   }
           }
           localStorage.setItem("user", JSON.stringify(user));
-          navigate("/");
+          navigate("/dashboard");
         } else {
           showError("Failed to fetch user profile.");
         }

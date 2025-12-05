@@ -60,6 +60,7 @@ const Prescription = () => {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [favorites, setFavorites] = useState({});
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [savePrescriptionId, setsavePrescriptionId] = useState(0);
 
   // ✅ Autofill patient data from appointment
   const [patientDetails, setPatientDetails] = useState({
@@ -197,6 +198,9 @@ const Prescription = () => {
       console.log("Prescription saved:", res.data);
 
       console.log("Appointment ID:", appointment?.id);
+
+      setsavePrescriptionId(res.data.id);
+      console.log("prescriptionId:  ", res.data.id);
 
       if (appointment?.id) {
         await axios.put(
@@ -388,13 +392,23 @@ const Prescription = () => {
         }),
         date: new Date().toISOString(),
       };
+      const payload2 = {
+        serviceId: 773,
+      };
+      const payload3 = {
+        serviceId: 774,
+      };
 
       const endpoint =
         currentStep === "pharmacy"
           ? "https://medbook-backend-1.onrender.com/api/prescription/send-to-pharmacy"
           : "https://medbook-backend-1.onrender.com/api/prescription/send-to-lab";
 
-      await axios.post(endpoint, payload);
+      // await axios.post(endpoint, payload);
+      const results = await axios.put(
+        `https://medbook-backend-1.onrender.com/api/prescription/updateserviceid/${savePrescriptionId}`,
+        payload2
+      );
 
       // Show success alert
       setShowSuccessAlert(true);

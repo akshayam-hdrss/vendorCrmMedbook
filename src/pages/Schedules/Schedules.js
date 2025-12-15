@@ -1,6 +1,3 @@
-
-// export default DoctorSchedulePage;
-
 import React, { useEffect, useState } from "react";
 import {
   Modal,
@@ -41,10 +38,17 @@ function DoctorSchedulePage() {
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showBasicTestsModal, setShowBasicTestsModal] = useState(false);
   const [rescheduleData, setRescheduleData] = useState({
     date: "",
     time: "",
     remarks: "",
+  });
+  const [basicTestsData, setBasicTestsData] = useState({
+    bloodPressure: "",
+    height: "",
+    weight: "",
+    sugar: "",
   });
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -247,6 +251,60 @@ function DoctorSchedulePage() {
     );
   };
 
+  const handleBasicTestsSubmit = async () => {
+  if (!selectedSchedule) return;
+
+  try {
+    // Format date correctly for MySQL (YYYY-MM-DD)
+    const scheduleDate = new Date(selectedSchedule.date);
+    const formattedDate = scheduleDate.toISOString().split('T')[0];
+    
+    // Format time correctly (ensure HH:MM:SS format)
+    let formattedTime = selectedSchedule.time;
+    if (formattedTime.length === 5) {
+      formattedTime = `${formattedTime}:00`;
+    }
+
+    const response = await fetch(`${BASE_URL}/${selectedSchedule.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: selectedSchedule.status,
+        remarks: selectedSchedule.remarks || "",
+        date: formattedDate,
+        time: formattedTime,
+        userId: selectedSchedule.userId,
+        doctorId: selectedSchedule.doctorId,
+        bloodPressure: basicTestsData.bloodPressure || selectedSchedule.bloodPressure || "",
+        height: basicTestsData.height || selectedSchedule.height || "",
+        weight: basicTestsData.weight || selectedSchedule.weight || "",
+        sugar: basicTestsData.sugar || selectedSchedule.sugar || "",
+        editedBy: isDoctor ? "doctor" : "user",
+      }),
+    });
+
+    if (response.ok) {
+      loadSchedules();
+      setShowBasicTestsModal(false);
+      setBasicTestsData({ bloodPressure: "", height: "", weight: "", sugar: "" });
+      
+      // Update selected schedule locally
+      setSelectedSchedule(prev => ({
+        ...prev,
+        bloodPressure: basicTestsData.bloodPressure || prev.bloodPressure,
+        height: basicTestsData.height || prev.height,
+        weight: basicTestsData.weight || prev.weight,
+        sugar: basicTestsData.sugar || prev.sugar,
+      }));
+    } else {
+      const error = await response.json();
+      alert("Failed to save basic tests: " + JSON.stringify(error));
+    }
+  } catch (e) {
+    alert("Error saving basic tests: " + e);
+  }
+};
+
   const stats = getAppointmentStats();
   const todayStats = getTodayAppointmentsByStatus();
 
@@ -357,6 +415,17 @@ function DoctorSchedulePage() {
         }
         .cursor-pointer {
           cursor: pointer;
+        }
+        .basic-tests-box {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          border-left: 4px solid #0d6efd;
+        }
+        .basic-test-item {
+          transition: all 0.2s ease;
+        }
+        .basic-test-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         @media (max-width: 576px) {
           .today-status-btn {
@@ -552,190 +621,284 @@ function DoctorSchedulePage() {
       </div>
 
       {/* Appointment Details Modal */}
-<Modal
-  show={showModal}
-  onHide={() => setShowModal(false)}
-  centered
-  size="lg"
->
-  {selectedSchedule && (
-    <>
-      <Modal.Header closeButton className="bg-primary text-white">
-        <Modal.Title className="w-100">
-          <div className="d-flex align-items-center">
-            <FaUserMd className="me-2" />
-            <span>Appointment Details</span>
-          </div>
-        </Modal.Title>
-      </Modal.Header>
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        centered
+        size="lg"
+      >
+        {selectedSchedule && (
+          <>
+            <Modal.Header closeButton className="bg-primary text-white">
+              <Modal.Title className="w-100">
+                <div className="d-flex align-items-center">
+                  <FaUserMd className="me-2" />
+                  <span>Appointment Details</span>
+                </div>
+              </Modal.Title>
+            </Modal.Header>
 
-      <Modal.Body className="p-4">
-        <Row className="g-4">
-          {/* Doctor or Patient */}
-          <Col xs={12} md={6}>
-            <div className="mb-3">
-              <strong className="d-block text-muted small">
-                {isDoctor ? "Patient" : "Doctor"}
-              </strong>
-              <span className="d-block fs-5 fw-semibold">
-                {isDoctor
-                  ? selectedSchedule.patientName || "Unknown"
-                  : selectedSchedule.doctorName || "Unknown"}
-              </span>
-            </div>
-          </Col>
+            <Modal.Body className="p-4">
+              <Row className="g-4">
+                {/* Doctor or Patient */}
+                <Col xs={12} md={6}>
+                  <div className="mb-3">
+                    <strong className="d-block text-muted small">
+                      {isDoctor ? "Patient" : "Doctor"}
+                    </strong>
+                    <span className="d-block fs-5 fw-semibold">
+                      {isDoctor
+                        ? selectedSchedule.patientName || "Unknown"
+                        : selectedSchedule.doctorName || "Unknown"}
+                    </span>
+                  </div>
+                </Col>
 
-          {/* Contact */}
-          <Col xs={12} md={6}>
-            <div className="mb-3">
-              <strong className="d-block text-muted small">Contact</strong>
-              {selectedSchedule.contactNumber ? (
-                <a
-                  href={`tel:${selectedSchedule.contactNumber}`}
-                  className="text-primary text-decoration-none fs-5"
+                {/* Contact */}
+                <Col xs={12} md={6}>
+                  <div className="mb-3">
+                    <strong className="d-block text-muted small">
+                      Contact
+                    </strong>
+                    {selectedSchedule.contactNumber ? (
+                      <a
+                        href={`tel:${selectedSchedule.contactNumber}`}
+                        className="text-primary text-decoration-none fs-5"
+                      >
+                        <FaPhone className="me-1" />
+                        {selectedSchedule.contactNumber}
+                      </a>
+                    ) : (
+                      <span className="text-muted">N/A</span>
+                    )}
+                  </div>
+                </Col>
+
+                {/* Date */}
+                <Col xs={12} md={6}>
+                  <div className="mb-3">
+                    <strong className="d-block text-muted small">Date</strong>
+                    <span className="fs-5">
+                      {formatDate(selectedSchedule.date)}
+                    </span>
+                  </div>
+                </Col>
+
+                {/* Time with Basic Tests Button */}
+                <Col xs={12} md={6}>
+                  <div className="mb-3">
+                    <strong className="d-block text-muted small">Time</strong>
+                    <span className="fs-5 d-block mb-2">
+                      {formatTime(selectedSchedule.time)}
+                    </span>
+
+                    {/* Basic Tests Button */}
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="me-2 mb-2"
+                      onClick={() => {
+                        // Pre-fill existing data if available
+                        setBasicTestsData({
+                          bloodPressure: selectedSchedule.bloodPressure || "",
+                          height: selectedSchedule.height || "",
+                          weight: selectedSchedule.weight || "",
+                          sugar: selectedSchedule.sugar || "",
+                        });
+                        setShowBasicTestsModal(true);
+                      }}
+                    >
+                      <FaNotesMedical className="me-1" />
+                      Basic Tests
+                    </Button>
+
+                    {/* View Prescription Button */}
+                    {selectedSchedule?.prescriptionID && (
+                      <Button
+                        variant="outline-warning"
+                        size="sm"
+                        onClick={() => {
+                          setShowModal(false);
+                          navigate("/prescription-details1", {
+                            state: { appointment: selectedSchedule },
+                          });
+                        }}
+                      >
+                        View Prescription
+                      </Button>
+                    )}
+                  </div>
+                </Col>
+
+                {/* Status */}
+                <Col xs={12}>
+                  <div className="mb-3">
+                    <strong className="d-block text-muted small">Status</strong>
+                    <Badge
+                      bg={getStatusColor(selectedSchedule.status)}
+                      className="text-uppercase fs-6 p-2"
+                    >
+                      {selectedSchedule.status}
+                    </Badge>
+                  </div>
+                </Col>
+
+                {/* Basic Tests Results Display */}
+                {(selectedSchedule?.bloodPressure ||
+                  selectedSchedule?.height ||
+                  selectedSchedule?.weight ||
+                  selectedSchedule?.sugar) && (
+                  <Col xs={12}>
+                    <div className="basic-tests-box p-3 mb-3 rounded">
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <strong className="text-primary">
+                          <FaNotesMedical className="me-2" />
+                          Basic Tests Results
+                        </strong>
+                        <Badge bg="success" className="small">
+                          Recorded
+                        </Badge>
+                      </div>
+                      <Row className="g-2">
+                        {selectedSchedule?.bloodPressure && (
+                          <Col xs={6} md={3}>
+                            <div className="basic-test-item text-center p-2 border rounded bg-white">
+                              <small className="d-block text-muted mb-1">
+                                Blood Pressure
+                              </small>
+                              <div className="fw-bold text-primary fs-5">
+                                {selectedSchedule.bloodPressure}
+                              </div>
+                              <small className="text-muted">mmHg</small>
+                            </div>
+                          </Col>
+                        )}
+                        {selectedSchedule?.sugar && (
+                          <Col xs={6} md={3}>
+                            <div className="basic-test-item text-center p-2 border rounded bg-white">
+                              <small className="d-block text-muted mb-1">
+                                Sugar Level
+                              </small>
+                              <div className="fw-bold text-primary fs-5">
+                                {selectedSchedule.sugar}
+                              </div>
+                              <small className="text-muted">mg/dL</small>
+                            </div>
+                          </Col>
+                        )}
+                        {selectedSchedule?.height && (
+                          <Col xs={6} md={3}>
+                            <div className="basic-test-item text-center p-2 border rounded bg-white">
+                              <small className="d-block text-muted mb-1">
+                                Height
+                              </small>
+                              <div className="fw-bold text-primary fs-5">
+                                {selectedSchedule.height}
+                              </div>
+                              <small className="text-muted">cm</small>
+                            </div>
+                          </Col>
+                        )}
+                        {selectedSchedule?.weight && (
+                          <Col xs={6} md={3}>
+                            <div className="basic-test-item text-center p-2 border rounded bg-white">
+                              <small className="d-block text-muted mb-1">
+                                Weight
+                              </small>
+                              <div className="fw-bold text-primary fs-5">
+                                {selectedSchedule.weight}
+                              </div>
+                              <small className="text-muted">kg</small>
+                            </div>
+                          </Col>
+                        )}
+                      </Row>
+                    </div>
+                  </Col>
+                )}
+
+                {/* Remarks */}
+                <Col xs={12}>
+                  <div className="mb-2">
+                    <strong className="d-block text-muted small">
+                      Remarks
+                    </strong>
+                    <div className="p-3 bg-light rounded">
+                      {selectedSchedule.remarks || "No remarks provided"}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </Modal.Body>
+
+            {/* Footer */}
+            <Modal.Footer className="flex-column flex-sm-row gap-2">
+              {/* Reschedule */}
+              {selectedSchedule.status?.toLowerCase() !== "confirmed" && (
+                <Button
+                  variant="outline-primary"
+                  className="flex-fill"
+                  onClick={() => {
+                    setShowModal(false);
+                    setShowReschedule(true);
+                  }}
                 >
-                  <FaPhone className="me-1" />
-                  {selectedSchedule.contactNumber}
-                </a>
-              ) : (
-                <span className="text-muted">N/A</span>
+                  Reschedule
+                </Button>
               )}
-            </div>
-          </Col>
 
-          {/* Date */}
-          <Col xs={12} md={6}>
-            <div className="mb-3">
-              <strong className="d-block text-muted small">Date</strong>
-              <span className="fs-5">{formatDate(selectedSchedule.date)}</span>
-            </div>
-          </Col>
-
-         <Col xs={12} md={6}>
-  <div className="mb-3">
-    <strong className="d-block text-muted small">Time</strong>
-    <span className="fs-5 d-block mb-2">
-      {formatTime(selectedSchedule.time)}
-    </span>
-
-    {/* Debug: check what data is available */}
-    {console.log("Selected Schedule:", selectedSchedule)}
-
-    {/* ✅ Show View Prescription only if prescriptionId or hasPrescription exists */}
-   {selectedSchedule?.prescriptionID && (
-  <Button
-    variant="outline-warning"
-    size="sm"
-    onClick={() => {
-      setShowModal(false);
-      navigate("/prescription-details1", {
-        state: { appointment: selectedSchedule },
-      });
-    }}
-  >
-    View Prescription
-  </Button>
-)}
-  </div>
-</Col>
-
-
-          {/* Status */}
-          <Col xs={12}>
-            <div className="mb-3">
-              <strong className="d-block text-muted small">Status</strong>
-              <Badge
-                bg={getStatusColor(selectedSchedule.status)}
-                className="text-uppercase fs-6 p-2"
+              {/* Confirm */}
+              <Button
+                variant="success"
+                className="flex-fill"
+                disabled={selectedSchedule?.status === "Confirmed"}
+                style={{
+                  opacity: selectedSchedule?.status === "Confirmed" ? 0.6 : 1,
+                  cursor:
+                    selectedSchedule?.status === "Confirmed"
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+                onClick={() => {
+                  if (selectedSchedule?.status === "Confirmed") return;
+                  updateBooking(selectedSchedule, "Confirmed");
+                  setSelectedSchedule({
+                    ...selectedSchedule,
+                    status: "Confirmed",
+                  });
+                }}
               >
-                {selectedSchedule.status}
-              </Badge>
-            </div>
-          </Col>
+                {selectedSchedule?.status === "Confirmed"
+                  ? "Confirmed ✅"
+                  : "Confirm"}
+              </Button>
 
-          {/* Remarks */}
-          <Col xs={12}>
-            <div className="mb-2">
-              <strong className="d-block text-muted small">Remarks</strong>
-              <div className="p-3 bg-light rounded">
-                {selectedSchedule.remarks || "No remarks provided"}
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </Modal.Body>
+              {/* Prescription */}
+              <Button
+                variant="outline-info"
+                className="flex-fill"
+                onClick={() => {
+                  setShowModal(false);
+                  navigate("/prescription", {
+                    state: { appointment: selectedSchedule },
+                  });
+                }}
+              >
+                Prescription
+              </Button>
 
-      {/* Footer */}
-      <Modal.Footer className="flex-column flex-sm-row gap-2">
-        {/* Reschedule */}
-        {selectedSchedule.status?.toLowerCase() !== "confirmed" && (
-          <Button
-            variant="outline-primary"
-            className="flex-fill"
-            onClick={() => {
-              setShowModal(false);
-              setShowReschedule(true);
-            }}
-          >
-            Reschedule
-          </Button>
+              {/* Close */}
+              <Button
+                variant="outline-secondary"
+                className="flex-fill"
+                onClick={() => setShowModal(false)}
+              >
+                Close
+              </Button>
+            </Modal.Footer>
+          </>
         )}
-
-        {/* Confirm */}
-        <Button
-          variant="success"
-          className="flex-fill"
-          disabled={selectedSchedule?.status === "Confirmed"}
-          style={{
-            opacity: selectedSchedule?.status === "Confirmed" ? 0.6 : 1,
-            cursor:
-              selectedSchedule?.status === "Confirmed"
-                ? "not-allowed"
-                : "pointer",
-          }}
-          onClick={() => {
-            if (selectedSchedule?.status === "Confirmed") return;
-            updateBooking(selectedSchedule, "Confirmed");
-            setSelectedSchedule({
-              ...selectedSchedule,
-              status: "Confirmed",
-            });
-          }}
-        >
-          {selectedSchedule?.status === "Confirmed"
-            ? "Confirmed ✅"
-            : "Confirm"}
-        </Button>
-
-        {/* Prescription */}
-        <Button
-          variant="outline-info"
-          className="flex-fill"
-          onClick={() => {
-            setShowModal(false);
-            navigate("/prescription", {
-              state: { appointment: selectedSchedule },
-            });
-          }}
-        >
-          Prescription
-        </Button>
-
-        {/* Close */}
-        <Button
-          variant="outline-secondary"
-          className="flex-fill"
-          onClick={() => setShowModal(false)}
-        >
-          Close
-        </Button>
-      </Modal.Footer>
-    </>
-  )}
-</Modal>
-
-
-
+      </Modal>
 
       {/* Reschedule Modal */}
       <Modal
@@ -814,6 +977,182 @@ function DoctorSchedulePage() {
             onClick={handleRescheduleSave}
           >
             Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Basic Tests Modal */}
+      <Modal
+        show={showBasicTestsModal}
+        onHide={() => {
+          setShowBasicTestsModal(false);
+          setBasicTestsData({
+            bloodPressure: "",
+            height: "",
+            weight: "",
+            sugar: "",
+          });
+        }}
+        centered
+        size="md"
+      >
+        <Modal.Header closeButton className="bg-info text-white">
+          <Modal.Title>Basic Tests</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Row>
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Blood Pressure</Form.Label>
+                  <InputGroup>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g., 120/80"
+                      value={basicTestsData.bloodPressure}
+                      onChange={(e) =>
+                        setBasicTestsData({
+                          ...basicTestsData,
+                          bloodPressure: e.target.value,
+                        })
+                      }
+                    />
+                    <InputGroup.Text>mmHg</InputGroup.Text>
+                  </InputGroup>
+                  <Form.Text className="text-muted">
+                    Format: systolic/diastolic
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Sugar Level</Form.Label>
+                  <InputGroup>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g., 110"
+                      value={basicTestsData.sugar}
+                      onChange={(e) =>
+                        setBasicTestsData({
+                          ...basicTestsData,
+                          sugar: e.target.value,
+                        })
+                      }
+                    />
+                    <InputGroup.Text>mg/dL</InputGroup.Text>
+                  </InputGroup>
+                  <Form.Text className="text-muted">
+                    Fasting blood sugar
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Height</Form.Label>
+                  <InputGroup>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g., 170"
+                      value={basicTestsData.height}
+                      onChange={(e) =>
+                        setBasicTestsData({
+                          ...basicTestsData,
+                          height: e.target.value,
+                        })
+                      }
+                    />
+                    <InputGroup.Text>cm</InputGroup.Text>
+                  </InputGroup>
+                </Form.Group>
+              </Col>
+
+              <Col xs={12} md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Weight</Form.Label>
+                  <InputGroup>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g., 70"
+                      value={basicTestsData.weight}
+                      onChange={(e) =>
+                        setBasicTestsData({
+                          ...basicTestsData,
+                          weight: e.target.value,
+                        })
+                      }
+                    />
+                    <InputGroup.Text>kg</InputGroup.Text>
+                  </InputGroup>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            {/* Show existing values if available */}
+            {(selectedSchedule?.bloodPressure ||
+              selectedSchedule?.height ||
+              selectedSchedule?.weight ||
+              selectedSchedule?.sugar) && (
+              <div className="mt-3 p-3 bg-light rounded">
+                <h6>Current Values:</h6>
+                <Row>
+                  {selectedSchedule?.bloodPressure && (
+                    <Col xs={6}>
+                      <small className="text-muted">BP:</small>
+                      <div className="fw-semibold">
+                        {selectedSchedule.bloodPressure} mmHg
+                      </div>
+                    </Col>
+                  )}
+                  {selectedSchedule?.sugar && (
+                    <Col xs={6}>
+                      <small className="text-muted">Sugar:</small>
+                      <div className="fw-semibold">
+                        {selectedSchedule.sugar} mg/dL
+                      </div>
+                    </Col>
+                  )}
+                  {selectedSchedule?.height && (
+                    <Col xs={6}>
+                      <small className="text-muted">Height:</small>
+                      <div className="fw-semibold">
+                        {selectedSchedule.height} cm
+                      </div>
+                    </Col>
+                  )}
+                  {selectedSchedule?.weight && (
+                    <Col xs={6}>
+                      <small className="text-muted">Weight:</small>
+                      <div className="fw-semibold">
+                        {selectedSchedule.weight} kg
+                      </div>
+                    </Col>
+                  )}
+                </Row>
+              </div>
+            )}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={() => {
+              setShowBasicTestsModal(false);
+              setBasicTestsData({
+                bloodPressure: "",
+                height: "",
+                weight: "",
+                sugar: "",
+              });
+            }}
+          >
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleBasicTestsSubmit}>
+            Save Tests
           </Button>
         </Modal.Footer>
       </Modal>

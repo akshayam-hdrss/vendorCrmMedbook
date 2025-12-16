@@ -43,11 +43,10 @@ export default function Sidebar() {
       <nav className={`sidebar ${isOpen ? "open" : ""}`}>
         <h3 className="sidebar-title text-center mb-4">🏥 MEDBOOK</h3>
         <ul className="sidebar-list">
-
           {/* ✅ Dashboard - Always visible */}
           <li>
             <NavLink
-              to="/"
+              to="/Dashboard"
               className={({ isActive }) =>
                 isActive ? "sidebar-link active" : "sidebar-link"
               }
@@ -111,21 +110,17 @@ export default function Sidebar() {
               </li>
             </>
           )}
-             <li>
-                <NavLink
-                  to="/received-rx"
-                  className={({ isActive }) =>
-                    isActive ? "sidebar-link active" : "sidebar-link"
-                  }
-                >
-                  <FaFilePrescription className="me-2" /> Received-Rx
-                </NavLink>
-              </li>
+          <li>
+            <NavLink
+              to="/received-rx"
+              className={({ isActive }) =>
+                isActive ? "sidebar-link active" : "sidebar-link"
+              }
+            >
+              <FaFilePrescription className="me-2" /> Received-Rx
+            </NavLink>
+          </li>
         </ul>
-
-
-
-      
 
         {/* 🔴 Logout button */}
         <div className="logout-section">
@@ -139,7 +134,9 @@ export default function Sidebar() {
       </nav>
 
       {/* Overlay (mobile only) */}
-      {isOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
+      {isOpen && (
+        <div className="sidebar-overlay" onClick={toggleSidebar}></div>
+      )}
     </>
   );
 }

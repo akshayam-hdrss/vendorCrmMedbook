@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
@@ -8,6 +8,17 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (token && user) {
+      // User is already logged in, redirect to dashboard
+      navigate("/dashboard");
+    }
+  }, [navigate]); // Added navigate as dependency
 
   const handleLogin = async () => {
     if (!phone || !password) {
@@ -60,12 +71,19 @@ export default function LoginPage() {
             const productDetailsResponse = await axios.get(
               `https://medbook-backend-1.onrender.com/api/user/getshop?phone=${user.phone}`
             );
-            console.log("Product Details Response:", productDetailsResponse.data);
-            const availableProducts = productDetailsResponse.data.availableProduct;
-  if (Array.isArray(availableProducts) && availableProducts.length > 0) {
-    const shopDetails = availableProducts[0];
-    localStorage.setItem("shopdetails", JSON.stringify(shopDetails));
-  }
+            console.log(
+              "Product Details Response:",
+              productDetailsResponse.data
+            );
+            const availableProducts =
+              productDetailsResponse.data.availableProduct;
+            if (
+              Array.isArray(availableProducts) &&
+              availableProducts.length > 0
+            ) {
+              const shopDetails = availableProducts[0];
+              localStorage.setItem("shopdetails", JSON.stringify(shopDetails));
+            }
           }
           localStorage.setItem("user", JSON.stringify(user));
           navigate("/dashboard");
@@ -113,11 +131,11 @@ export default function LoginPage() {
       backdropFilter: "blur(6px)",
       boxSizing: "border-box",
     },
-    logo: { 
-      width: "clamp(70px, 20vw, 90px)", 
-      height: "clamp(70px, 20vw, 90px)", 
+    logo: {
+      width: "clamp(70px, 20vw, 90px)",
+      height: "clamp(70px, 20vw, 90px)",
       marginBottom: "clamp(8px, 2vw, 10px)",
-      objectFit: "contain" 
+      objectFit: "contain",
     },
     title: {
       fontSize: "clamp(22px, 6vw, 26px)",
@@ -170,9 +188,9 @@ export default function LoginPage() {
       boxSizing: "border-box",
     },
     buttonHover: { transform: "scale(0.97)" },
-    extra: { 
-      marginTop: "clamp(16px, 4vw, 20px)", 
-      fontSize: "clamp(12px, 3vw, 13px)" 
+    extra: {
+      marginTop: "clamp(16px, 4vw, 20px)",
+      fontSize: "clamp(12px, 3vw, 13px)",
     },
     link: { color: "white", fontWeight: "bold", cursor: "pointer" },
     spinner: {
@@ -192,11 +210,7 @@ export default function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.box}>
-        <img
-          src="/medbook1.jpg"
-          alt="Medbook Logo"
-          style={styles.logo}
-        />
+        <img src="/medbook1.jpg" alt="Medbook Logo" style={styles.logo} />
         <h1 style={styles.title}>Medbook</h1>
 
         <input
@@ -223,9 +237,9 @@ export default function LoginPage() {
 
         {errorMessage && <div style={styles.error}>{errorMessage}</div>}
 
-        <button 
-          style={styles.button} 
-          onClick={handleLogin} 
+        <button
+          style={styles.button}
+          onClick={handleLogin}
           disabled={isLoading}
         >
           {isLoading ? (
@@ -244,18 +258,6 @@ export default function LoginPage() {
             "LOGIN"
           )}
         </button>
-
-        {/* <div style={styles.extra}>
-          <p>
-            Don't have an account?{" "}
-            <span style={styles.link} onClick={() => navigate("/signup")}>
-              Sign Up
-            </span>
-          </p>
-          <p style={styles.link} onClick={() => navigate("/")}>
-            ← Back to Start
-          </p>
-        </div> */}
       </div>
     </div>
   );

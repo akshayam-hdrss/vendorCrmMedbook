@@ -1,10 +1,36 @@
-import React from 'react';
+import React from "react";
 import { Button, Container } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { FaNotesMedical, FaHistory } from "react-icons/fa";
 
 const Manage = () => {
   const navigate = useNavigate();
+
+  // 🔐 Get user
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const isDoctor = storedUser?.isDoctor;
+  const isService = storedUser?.isService;
+
+  // 🎯 Dynamic values
+  const primaryBtnLabel = isDoctor
+    ? "Medication Details"
+    : isService
+      ? "Product & Service"
+      : "Medication Details";
+
+  const primaryBtnRoute = isDoctor
+    ? "/medicalproducts"
+    : isService
+      ? "/create-billing"
+      : "/medicalproducts";
+
+  const secondaryBtnLabel = isService
+    ? "Billing History"
+    : "Prescription History";
+
+  const secondaryBtnRoute = isService
+    ? "/billing-history"
+    : "/prescriptionDetails";
 
   return (
     <>
@@ -159,24 +185,24 @@ const Manage = () => {
           }
         }
       `}</style>
-
-      {/* JSX */}
       <Container className="prescription-buttons-container">
         <div className="button-group">
+          {/* PRIMARY BUTTON */}
           <Button
             className="custom-btn primary-btn mx-3"
-            onClick={() => navigate("/medicalproducts")}
+            onClick={() => navigate(primaryBtnRoute)}
           >
             <FaNotesMedical size={22} />
-            Medication Details
+            {primaryBtnLabel}
           </Button>
 
+          {/* HISTORY BUTTON */}
           <Button
             className="custom-btn success-btn mx-3"
-            onClick={() => navigate("/prescriptionDetails")}
+            onClick={() => navigate(secondaryBtnRoute)}
           >
             <FaHistory size={22} />
-            Prescription History
+            {secondaryBtnLabel}
           </Button>
         </div>
       </Container>

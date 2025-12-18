@@ -35,8 +35,8 @@ const CreateBilling = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
   const [pdfPreview, setPdfPreview] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Handle basic input
   const handleChange = (e) => {
@@ -71,7 +71,6 @@ const CreateBilling = () => {
   const taxAmount = (subTotal * taxPercent) / 100;
   const total = subTotal + taxAmount;
 
-  // 📄 Generate PDF with better design
   // 📄 Generate PDF with better design
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -110,33 +109,25 @@ const CreateBilling = () => {
     doc.text(`Name: ${form.customerName}`, 20, 97);
     doc.text(`Contact: ${form.contactNumber}`, 20, 104);
 
-    // Get only valid items
-    const validItems = items.filter(
-      (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
+    // Table Headers - Improved table design
+    const tableColumn = ["DESCRIPTION", "PRICE (₹)", "QTY", "SUBTOTAL (₹)"];
+    const tableRows = items
+      .filter((item) => item.itemName.trim() !== "" && item.price > 0)
+      .map((item) => [
+        item.itemName,
+        item.price.toFixed(2),
+        item.quantity.toString(),
+        (item.price * item.quantity).toFixed(2),
+      ]);
 
-    );
+    // Add summary rows
+    tableRows.push(["", "", "Subtotal", subTotal.toFixed(2)]);
 
-    // Create table data
-    const tableColumn = ["DESCRIPTION", "PRICE", "QTY", "TOTAL"];
-
-    // Item rows
-    const tableRows = validItems.map((item) => [
-      item.itemName,
-      item.price.toFixed(2),
-      item.quantity.toString(),
-      (item.price * item.quantity).toFixed(2),
-    ]);
-
-    // Add subtotal row
-    tableRows.push(["", "", "Subtotal:", subTotal.toFixed(2)]);
-
-    // Add tax row if applicable
     if (taxPercent > 0) {
-      tableRows.push(["", "", `Tax (${taxPercent}%):`, taxAmount.toFixed(2)]);
+      tableRows.push(["", "", `Tax (${taxPercent}%)`, taxAmount.toFixed(2)]);
     }
 
-    // Add total row
-    tableRows.push(["", "", "TOTAL:", total.toFixed(2)]);
+    tableRows.push(["", "", "TOTAL", total.toFixed(2)]);
 
     autoTable(doc, {
       startY: 110,
@@ -163,44 +154,22 @@ const CreateBilling = () => {
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      // Adjusted column widths for better spacing
       columnStyles: {
-        0: { cellWidth: 80, halign: "left" }, // DESCRIPTION - Reduced width
-        1: { cellWidth: 35, halign: "right" }, // PRICE
-        2: { cellWidth: 25, halign: "center" }, // QTY
-        3: { cellWidth: 35, halign: "right" }, // TOTAL
+        0: { cellWidth: 90, fontStyle: "bold" },
+        1: { cellWidth: 35, halign: "right" },
+        2: { cellWidth: 25, halign: "center" },
+        3: { cellWidth: 40, halign: "right", fontStyle: "bold" },
       },
-      // Increased left and right margins for gap
-      margin: { left: 25, right: 25, top: 10, bottom: 10 },
-      tableWidth: 160, // Reduced table width to create gaps on both sides
-
-      // Custom styling for summary rows
-      willDrawCell: function (data) {
-        const rowIndex = data.row.index;
-        const isItemRow = rowIndex < validItems.length;
-        const isSubtotalRow = rowIndex === validItems.length;
-        const isTaxRow = taxPercent > 0 && rowIndex === validItems.length + 1;
-        const isTotalRow = rowIndex === tableRows.length - 1;
-
-        // Bold for all summary rows
-        if (!isItemRow) {
-          data.cell.styles.fontStyle = "bold";
-        }
-
-        // Red color for total row
-        if (isTotalRow) {
-          data.cell.styles.textColor = [228, 0, 0];
-        }
-
-        // Right align the label in QTY column for summary rows
-        if (!isItemRow && data.column.dataKey === 2) {
-          data.cell.styles.halign = "right";
-        }
-      },
+      margin: { left: 20, right: 20 },
     });
 
-    // Thank you message
+    // Highlight total row
     const finalY = doc.lastAutoTable.finalY || 150;
+
+    // Total row styling
+    doc.setFillColor(255, 245, 245); // Light red background
+    doc.rect(20, finalY - 10, 170, 10, "F");
+
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(228, 0, 0); // Red color
@@ -219,46 +188,9 @@ const CreateBilling = () => {
     const pdfBlob = doc.output("blob");
     const pdfUrl = URL.createObjectURL(pdfBlob);
     setPdfPreview(pdfUrl);
-    return pdfUrl;
-  };
-
-  // Generate preview without submitting
-  const handlePreview = () => {
-    const validItems = items.filter(
-      (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
-    );
-    if (validItems.length === 0) {
-      setMessage("❌ Please add at least one valid item before preview.");
-      setMessageType("error");
-      setTimeout(() => {
-        setMessage("");
-        setMessageType("");
-      }, 3000);
-      return;
-    }
-    if (!form.customerName.trim()) {
-      setMessage("❌ Please enter customer name.");
-      setMessageType("error");
-      setTimeout(() => {
-        setMessage("");
-        setMessageType("");
-      }, 3000);
-      return;
-    }
-    if (!form.contactNumber.trim()) {
-      setMessage("❌ Please enter contact number.");
-      setMessageType("error");
-      setTimeout(() => {
-        setMessage("");
-        setMessageType("");
-      }, 3000);
-      return;
-    }
-
-    const pdfUrl = generatePDF();
-    setPdfPreview(pdfUrl);
     setShowPreview(true);
+
+    return doc;
   };
 
   // 🚀 Submit
@@ -269,8 +201,7 @@ const CreateBilling = () => {
 
     // Validate items
     const validItems = items.filter(
-      (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
+      (item) => item.itemName.trim() !== "" && item.price > 0
     );
     if (validItems.length === 0) {
       setMessage("❌ Please add at least one valid item.");
@@ -330,15 +261,13 @@ const CreateBilling = () => {
       setMessageType("success");
 
       // Generate PDF after successful submission
-      const pdfUrl = generatePDF();
-      setPdfPreview(pdfUrl);
-      setShowPreview(true);
+      generatePDF();
 
-      // Clear message after 10 seconds
+      // Clear message after 3 seconds
       setTimeout(() => {
         setMessage("");
         setMessageType("");
-      }, 10000);
+      }, 3000);
     } catch (error) {
       console.error("Error creating bill:", error.response?.data || error);
 
@@ -383,106 +312,42 @@ const CreateBilling = () => {
     setShowPreview(false);
     if (pdfPreview) {
       URL.revokeObjectURL(pdfPreview);
-      setPdfPreview(null);
     }
   };
 
-  // Invoice Preview Component (Simple version)
-  const InvoicePreview = ({ form, items, subTotal, taxAmount, total }) => {
+  // Generate preview without submitting
+  const handlePreview = () => {
     const validItems = items.filter(
-      (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
+      (item) => item.itemName.trim() !== "" && item.price > 0
     );
-
-    return (
-      <div className="invoice-preview">
-        <div className="invoice-header">
-          <h1>MEDBOOK</h1>
-          <h2>INVOICE</h2>
-          <div className="invoice-meta">
-            <p>
-              Invoice #: INV-{form.bookingId}-{Date.now().toString().slice(-6)}
-            </p>
-            <p>Date: {new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-
-        <div className="invoice-from-to">
-          <div className="invoice-from">
-            <h3>From:</h3>
-            <p>
-              <strong>MEDBOOK Healthcare</strong>
-            </p>
-            <p>123 Medical Center Drive</p>
-            <p>Health City, HC 12345</p>
-            <p>Phone: (123) 456-7890</p>
-            <p>Email: billing@medbook.com</p>
-          </div>
-
-          <div className="invoice-to">
-            <h3>Bill To:</h3>
-            <p>
-              <strong>{form.customerName}</strong>
-            </p>
-            <p>Phone: {form.contactNumber}</p>
-            <p>Booking ID: {form.bookingId}</p>
-            <p>Date: {new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-
-        <table className="invoice-table">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th>Price (₹)</th>
-              <th>Qty</th>
-              <th>Total (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {validItems.map((item, index) => (
-              <tr key={index}>
-                <td>{item.itemName}</td>
-                <td>{item.price.toFixed(2)}</td>
-                <td>{item.quantity}</td>
-                <td>{(item.price * item.quantity).toFixed(2)}</td>
-              </tr>
-            ))}
-
-            {/* Summary rows */}
-            <tr className="summary-row">
-              <td colSpan="3" className="summary-label">
-                Subtotal:
-              </td>
-              <td className="summary-value">₹{subTotal.toFixed(2)}</td>
-            </tr>
-            {taxAmount > 0 && (
-              <tr className="summary-row">
-                <td colSpan="3" className="summary-label">
-                  Tax ({taxPercent}%):
-                </td>
-                <td className="summary-value">₹{taxAmount.toFixed(2)}</td>
-              </tr>
-            )}
-            <tr className="total-row">
-              <td colSpan="3" className="total-label">
-                TOTAL:
-              </td>
-              <td className="total-value">₹{total.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div className="invoice-actions">
-          <button className="btn-print" onClick={handlePrint}>
-            <i className="fas fa-print"></i> Print Invoice
-          </button>
-          <button className="btn-download" onClick={handleDownload}>
-            <i className="fas fa-download"></i> Download PDF
-          </button>
-        </div>
-      </div>
-    );
+    if (validItems.length === 0) {
+      setMessage("❌ Please add at least one valid item before preview.");
+      setMessageType("error");
+      setTimeout(() => {
+        setMessage("");
+        setMessageType("");
+      }, 3000);
+      return;
+    }
+    if (!form.customerName.trim()) {
+      setMessage("❌ Please enter customer name.");
+      setMessageType("error");
+      setTimeout(() => {
+        setMessage("");
+        setMessageType("");
+      }, 3000);
+      return;
+    }
+    if (!form.contactNumber.trim()) {
+      setMessage("❌ Please enter contact number.");
+      setMessageType("error");
+      setTimeout(() => {
+        setMessage("");
+        setMessageType("");
+      }, 3000);
+      return;
+    }
+    generatePDF();
   };
 
   return (
@@ -790,42 +655,31 @@ const CreateBilling = () => {
         </form>
       </div>
 
-      {/* PDF Preview Modal */}
-      {showPreview && (
+      {/* PDF Preview Modal - Fixed to show PDF with Print/Download buttons */}
+      {showPreview && pdfPreview && (
         <div className="pdf-preview-modal">
           <div className="pdf-preview-content">
             <div className="pdf-preview-header">
-              <h3>Bill Preview</h3>
+              <h3 style={{ color: "white", margin: 0 }}>Invoice Preview</h3>
               <div className="pdf-preview-actions">
-                <button className="btn-print" onClick={handlePrint}>
-                  <i className="fas fa-print"></i> Print
+                <button onClick={handlePrint} className="btn-print">
+                  🖨️ Print
                 </button>
-                <button className="btn-download" onClick={handleDownload}>
-                  <i className="fas fa-download"></i> Download
+                <button onClick={handleDownload} className="btn-download">
+                  ⬇️ Download PDF
                 </button>
-                <button className="btn-remove" onClick={closePreview}>
-                  <i className="fas fa-times"></i> Close
+                <button onClick={closePreview} className="btn-close">
+                  ✕ Close
                 </button>
               </div>
             </div>
-
             <div className="pdf-preview-body">
-              {pdfPreview ? (
-                <iframe
-                  src={pdfPreview}
-                  className="pdf-iframe"
-                  title="Invoice Preview"
-                />
-              ) : (
-                <InvoicePreview
-                  form={form}
-                  items={items}
-                  subTotal={subTotal}
-                  taxAmount={taxAmount}
-                  total={total}
-                  taxPercent={taxPercent}
-                />
-              )}
+              <iframe
+                src={pdfPreview}
+                title="Invoice Preview"
+                className="pdf-iframe"
+                style={{ width: "100%", height: "500px", border: "none" }}
+              />
             </div>
           </div>
         </div>

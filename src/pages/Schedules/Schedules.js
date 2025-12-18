@@ -889,7 +889,7 @@ function DoctorSchedulePage() {
 
               {/* Close */}
               <Button
-                variant="outline-secondary"
+                variant=""
                 className="flex-fill"
                 onClick={() => setShowModal(false)}
               >

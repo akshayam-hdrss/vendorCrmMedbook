@@ -85,6 +85,24 @@ export default function LoginPage() {
               localStorage.setItem("shopdetails", JSON.stringify(shopDetails));
             }
           }
+          if (user.isService) {
+            const serviceDetailsResponse = await axios.get(
+              `https://medbook-backend-1.onrender.com/api/user/getservice?phone=${user.phone}`
+            );
+            console.log(
+              "Service Details Response:",
+              serviceDetailsResponse.data
+            );
+            const availableServices =
+              serviceDetailsResponse.data.services;
+            if (
+              Array.isArray(availableServices) &&
+              availableServices.length > 0
+            ) {
+              const shopDetails = availableServices[0];
+              localStorage.setItem("shopdetails", JSON.stringify(shopDetails));
+            }
+          }
           localStorage.setItem("user", JSON.stringify(user));
           navigate("/dashboard");
         } else {

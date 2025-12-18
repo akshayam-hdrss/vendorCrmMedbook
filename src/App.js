@@ -21,6 +21,8 @@ import ProductPage4 from "./pages/Products/Products4/ProductPage4";
 import Productpage2 from "./pages/Products/Products2/Productpage2";
 import PrescriptionDetails1 from "./pages/Schedules/PrescriptionDetails1";
 import Home from "./pages/Home/Home";
+import Invoice from "./pages/ServiceBilling/Invoice";
+import CreateBilling from "./pages/ServiceBilling/CreateBilling";
 
 // Layout component for pages WITH sidebar
 function AppLayout({ children }) {
@@ -177,6 +179,27 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <PrescriptionDetails1 />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/Invoice"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Invoice />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/ServiceBilling"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <CreateBilling />
               </AppLayout>
             </ProtectedRoute>
           }

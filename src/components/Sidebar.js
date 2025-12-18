@@ -18,6 +18,9 @@ export default function Sidebar() {
   const shopDetails = JSON.parse(localStorage.getItem("shopdetails"));
   const isDoctor = storedUser?.isDoctor;
   const isProduct = storedUser?.isProduct;
+  const isService = storedUser?.isService;
+  const isLab = storedUser?.isLab;
+  const isPharmacy = storedUser?.isPharmacy;
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -72,7 +75,7 @@ export default function Sidebar() {
           ) : (
             <>
               {/* Doctor Menu */}
-              {isDoctor && (
+              {isDoctor ? (
                 <li>
                   <NavLink
                     to="/schedule"
@@ -83,7 +86,32 @@ export default function Sidebar() {
                     <FaCalendarAlt className="me-2" /> Schedule
                   </NavLink>
                 </li>
-              )}
+              ) :
+                isService ? (
+                  <>
+                    <li>
+                      <NavLink
+                        to="/schedule"
+                        className={({ isActive }) =>
+                          isActive ? "sidebar-link active" : "sidebar-link"
+                        }
+                      >
+                        <FaCalendarAlt className="me-2" /> Schedule
+                      </NavLink>
+                    </li>
+
+                    <li>
+                      <NavLink
+                        to="/ServiceBilling"
+                        className={({ isActive }) =>
+                          isActive ? "sidebar-link active" : "sidebar-link"
+                        }
+                      >
+                        <FaFilePrescription className="me-2" /> Billing
+                      </NavLink>
+                    </li>
+                  </>
+                ) : null}
 
               {/* Prescription */}
               <li>
@@ -96,7 +124,16 @@ export default function Sidebar() {
                   <FaFilePrescription className="me-2" /> Prescription
                 </NavLink>
               </li>
-
+              <li>
+                <NavLink
+                  to="/received-rx"
+                  className={({ isActive }) =>
+                    isActive ? "sidebar-link active" : "sidebar-link"
+                  }
+                >
+                  <FaFilePrescription className="me-2" /> Received-Rx
+                </NavLink>
+              </li>
               {/* Manage */}
               <li>
                 <NavLink
@@ -110,16 +147,6 @@ export default function Sidebar() {
               </li>
             </>
           )}
-          <li>
-            <NavLink
-              to="/received-rx"
-              className={({ isActive }) =>
-                isActive ? "sidebar-link active" : "sidebar-link"
-              }
-            >
-              <FaFilePrescription className="me-2" /> Received-Rx
-            </NavLink>
-          </li>
         </ul>
 
         {/* 🔴 Logout button */}

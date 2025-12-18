@@ -23,6 +23,7 @@ import PrescriptionDetails1 from "./pages/Schedules/PrescriptionDetails1";
 import Home from "./pages/Home/Home";
 import Invoice from "./pages/ServiceBilling/Invoice";
 import CreateBilling from "./pages/ServiceBilling/CreateBilling";
+import ServiceSchedulePage from "./pages/Schedules/ServiceSchedules";
 
 // Layout component for pages WITH sidebar
 function AppLayout({ children }) {
@@ -69,6 +70,17 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <DoctorSchedulePage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/serviceschedule"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ServiceSchedulePage />
               </AppLayout>
             </ProtectedRoute>
           }
@@ -183,7 +195,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-         <Route
+        <Route
           path="/Invoice"
           element={
             <ProtectedRoute>

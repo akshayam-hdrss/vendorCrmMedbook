@@ -39,7 +39,7 @@ function ServiceSchedulePage() {
     const [showModal, setShowModal] = useState(false);
     const [showReschedule, setShowReschedule] = useState(false);
     const [showBasicTestsModal, setShowBasicTestsModal] = useState(false);
-    
+
     const [rescheduleData, setRescheduleData] = useState({
         date: "",
         time: "",
@@ -52,6 +52,14 @@ function ServiceSchedulePage() {
         sugar: "",
     });
     const [activeFilter, setActiveFilter] = useState("all");
+
+    const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+    // const userId = storedUser?.id || "";
+    setUserId(storedUser?.id || 31);
+    const shopDetails = JSON.parse(localStorage.getItem("shopdetails"));
+    const serviceId = shopDetails?.id || "";
+    const serviceName = shopDetails?.serviceName || "";
+
 
     const navigate = useNavigate();
 
@@ -76,7 +84,7 @@ function ServiceSchedulePage() {
 
             const url = isDoc
                 ? `${BASE_URL}/doctor/${uid}`
-                : `${BASE_URL}/user/${uid}`;
+                : `${BASE_URL}/service/${serviceId}`;
             const res = await fetch(url);
             const data = await res.json();
 

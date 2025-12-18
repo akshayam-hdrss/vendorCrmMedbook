@@ -1,18 +1,24 @@
 import React, { useState } from "react";
 import axios from "axios";
 import "./CreateBilling.css"; // We'll create this CSS file
+import { useLocation } from "react-router-dom";
+
 
 const CreateBilling = () => {
     // 🔐 Local storage
     const storedUser = JSON.parse(localStorage.getItem("user"));
     const shopDetails = JSON.parse(localStorage.getItem("shopdetails"));
-    const serviceId = shopDetails?.id || "";
+    const serviceId = storedUser?.id || "";
     const serviceName = shopDetails?.serviceName || "";
-    const userId = 0;
+
+    const location = useLocation();
+    const appointment = location.state?.appointment;
+    console.log(appointment);
+    const userId = appointment?.userId || "";
 
     // 🧾 Form
     const [form, setForm] = useState({
-        bookingId: "",
+        bookingId: appointment?.id || "",
         taxPercent: "",
     });
 
@@ -66,14 +72,19 @@ const CreateBilling = () => {
 
         try {
             await axios.post(
-                "http://localhost:5000/api/service-billing/create-bill",
+                "https://medbook-backend-1.onrender.com/api/service-billing/create-bill",
                 {
                     bookingId: Number(form.bookingId),
                     serviceId: Number(serviceId),
                     userId: Number(userId),
-                    taxPercent,
-                    taxAmount,
-                    items,
+                    subTotal: Number(subTotal),
+                    tax: Number(taxAmount),
+                    total: Number(total),
+                    items: items.map(item => ({
+                        itemName: item.itemName,
+                        quantity: Number(item.quantity),
+                        price: Number(item.price),
+                    })),
                 }
             );
 
@@ -81,7 +92,7 @@ const CreateBilling = () => {
             setMessageType("success");
             setItems([{ itemName: "", quantity: 1, price: 0 }]);
             setForm({ bookingId: "", taxPercent: "" });
-            
+
             // Clear message after 3 seconds
             setTimeout(() => {
                 setMessage("");
@@ -139,8 +150,8 @@ const CreateBilling = () => {
                     <div className="form-section">
                         <div className="section-header">
                             <h3 className="section-title">Bill Items</h3>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={addItem}
                                 className="btn-add-item"
                             >
@@ -157,7 +168,7 @@ const CreateBilling = () => {
                                 <div className="table-col col-total">Total (₹)</div>
                                 <div className="table-col col-action">Action</div>
                             </div>
-                            
+
                             {items.map((item, index) => (
                                 <div key={index} className="table-row">
                                     <div className="table-col col-name">
@@ -205,8 +216,8 @@ const CreateBilling = () => {
                                     </div>
                                     <div className="table-col col-action">
                                         {items.length > 1 && (
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={() => removeItem(index)}
                                                 className="btn-remove"
                                             >
@@ -225,8 +236,8 @@ const CreateBilling = () => {
                                     <div className="item-card-header">
                                         <span>Item #{index + 1}</span>
                                         {items.length > 1 && (
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={() => removeItem(index)}
                                                 className="btn-remove"
                                             >
@@ -290,13 +301,13 @@ const CreateBilling = () => {
                     {/* Summary Section */}
                     <div className="form-section summary-section">
                         <h3 className="section-title">Bill Summary</h3>
-                        
+
                         <div className="summary-grid">
                             <div className="summary-row">
                                 <span className="summary-label">Subtotal</span>
                                 <span className="summary-value">₹{subTotal.toFixed(2)}</span>
                             </div>
-                            
+
                             <div className="summary-row tax-row">
                                 <div className="tax-input-group">
                                     <label htmlFor="taxPercent" className="summary-label">
@@ -316,7 +327,7 @@ const CreateBilling = () => {
                                 </div>
                                 <span className="summary-value">₹{taxAmount.toFixed(2)}</span>
                             </div>
-                            
+
                             <div className="summary-row total-row">
                                 <span className="total-label">Total Amount</span>
                                 <span className="total-value">₹{total.toFixed(2)}</span>
@@ -326,8 +337,8 @@ const CreateBilling = () => {
 
                     {/* Action Buttons */}
                     <div className="form-actions">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             className="btn-secondary"
                             onClick={() => {
                                 setItems([{ itemName: "", quantity: 1, price: 0 }]);
@@ -336,8 +347,8 @@ const CreateBilling = () => {
                         >
                             Clear All
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             disabled={loading}
                             className="btn-primary"
                         >

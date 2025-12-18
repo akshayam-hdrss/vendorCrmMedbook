@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import "./CreateBilling.css"; // We'll create this CSS file
 
 const CreateBilling = () => {
     // 🔐 Local storage
@@ -22,6 +23,7 @@ const CreateBilling = () => {
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+    const [messageType, setMessageType] = useState(""); // success/error
 
     // Handle basic input
     const handleChange = (e) => {
@@ -31,7 +33,7 @@ const CreateBilling = () => {
     // Handle item change
     const handleItemChange = (index, field, value) => {
         const updatedItems = [...items];
-        updatedItems[index][field] = value;
+        updatedItems[index][field] = field === 'itemName' ? value : Number(value);
         setItems(updatedItems);
     };
 
@@ -75,118 +77,294 @@ const CreateBilling = () => {
                 }
             );
 
-            setMessage("✅ Bill created successfully");
+            setMessage("✅ Bill created successfully!");
+            setMessageType("success");
             setItems([{ itemName: "", quantity: 1, price: 0 }]);
             setForm({ bookingId: "", taxPercent: "" });
+            
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                setMessage("");
+                setMessageType("");
+            }, 3000);
         } catch (error) {
-            setMessage("❌ Failed to create bill");
+            setMessage("❌ Failed to create bill. Please try again.");
+            setMessageType("error");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: 900, margin: "auto", padding: 20 }}>
-            <h2>Create Billing</h2>
-
-            {/* Service Info */}
-            <div style={{ marginBottom: 15 }}>
-                <strong>Service:</strong> {serviceName} (ID: {serviceId})
+        <div className="billing-container">
+            {/* Header */}
+            <div className="billing-header">
+                <h1>Medbook</h1>
+                <div className="service-info-card">
+                    <div className="service-info">
+                        <span className="service-label"></span>
+                        <span className="service-name">{serviceName}</span>
+                    </div>
+                    <div className="service-id">
+                        <span className="service-label">Service ID:</span>
+                        <span className="service-value">{serviceId}</span>
+                    </div>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
-                {/* Booking */}
-                <div style={{ display: "flex", gap: 10, marginBottom: 15 }}>
-                    <input
-                        name="bookingId"
-                        placeholder="Booking ID"
-                        value={form.bookingId}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
+            {/* Form Section */}
+            <div className="billing-card">
+                <form onSubmit={handleSubmit}>
+                    {/* Booking ID Section */}
+                    <div className="form-section">
+                        <h3 className="section-title">Booking Information</h3>
+                        <div className="input-group">
+                            <label htmlFor="bookingId" className="form-label">
+                                Booking ID *
+                            </label>
+                            <input
+                                id="bookingId"
+                                name="bookingId"
+                                type="text"
+                                placeholder="Enter booking ID"
+                                value={form.bookingId}
+                                onChange={handleChange}
+                                required
+                                className="form-input"
+                            />
+                        </div>
+                    </div>
 
-                <hr />
+                    {/* Items Section */}
+                    <div className="form-section">
+                        <div className="section-header">
+                            <h3 className="section-title">Bill Items</h3>
+                            <button 
+                                type="button" 
+                                onClick={addItem}
+                                className="btn-add-item"
+                            >
+                                <span className="plus-icon">+</span> Add Item
+                            </button>
+                        </div>
 
-                {/* Items */}
-                <h4>Items</h4>
-                {items.map((item, index) => (
-                    <div
-                        key={index}
-                        style={{ display: "flex", gap: 10, marginBottom: 10 }}
-                    >
-                        <input
-                            placeholder="Item Name"
-                            value={item.itemName}
-                            onChange={(e) =>
-                                handleItemChange(index, "itemName", e.target.value)
-                            }
-                            required
-                        />
-                        <input
-                            type="number"
-                            placeholder="Qty"
-                            value={item.quantity}
-                            onChange={(e) =>
-                                handleItemChange(index, "quantity", e.target.value)
-                            }
-                            required
-                        />
-                        <input
-                            type="number"
-                            placeholder="Price"
-                            value={item.price}
-                            onChange={(e) =>
-                                handleItemChange(index, "price", e.target.value)
-                            }
-                            required
-                        />
-                        <button type="button" onClick={() => removeItem(index)}>
-                            ❌
+                        {/* Table for Desktop */}
+                        <div className="items-table desktop-view">
+                            <div className="table-header">
+                                <div className="table-col col-name">Item Name</div>
+                                <div className="table-col col-qty">Quantity</div>
+                                <div className="table-col col-price">Price (₹)</div>
+                                <div className="table-col col-total">Total (₹)</div>
+                                <div className="table-col col-action">Action</div>
+                            </div>
+                            
+                            {items.map((item, index) => (
+                                <div key={index} className="table-row">
+                                    <div className="table-col col-name">
+                                        <input
+                                            type="text"
+                                            placeholder="Item name"
+                                            value={item.itemName}
+                                            onChange={(e) =>
+                                                handleItemChange(index, "itemName", e.target.value)
+                                            }
+                                            required
+                                            className="table-input"
+                                        />
+                                    </div>
+                                    <div className="table-col col-qty">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={item.quantity}
+                                            onChange={(e) =>
+                                                handleItemChange(index, "quantity", e.target.value)
+                                            }
+                                            required
+                                            className="table-input"
+                                        />
+                                    </div>
+                                    <div className="table-col col-price">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={item.price}
+                                            onChange={(e) =>
+                                                handleItemChange(index, "price", e.target.value)
+                                            }
+                                            required
+                                            className="table-input"
+                                        />
+                                    </div>
+                                    <div className="table-col col-total">
+                                        <span className="item-total">
+                                            ₹{(item.quantity * item.price).toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="table-col col-action">
+                                        {items.length > 1 && (
+                                            <button 
+                                                type="button" 
+                                                onClick={() => removeItem(index)}
+                                                className="btn-remove"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Mobile View for Items */}
+                        <div className="items-list mobile-view">
+                            {items.map((item, index) => (
+                                <div key={index} className="item-card">
+                                    <div className="item-card-header">
+                                        <span>Item #{index + 1}</span>
+                                        {items.length > 1 && (
+                                            <button 
+                                                type="button" 
+                                                onClick={() => removeItem(index)}
+                                                className="btn-remove"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="item-card-body">
+                                        <div className="mobile-input-group">
+                                            <label>Item Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Item name"
+                                                value={item.itemName}
+                                                onChange={(e) =>
+                                                    handleItemChange(index, "itemName", e.target.value)
+                                                }
+                                                required
+                                                className="mobile-input"
+                                            />
+                                        </div>
+                                        <div className="mobile-row">
+                                            <div className="mobile-input-group">
+                                                <label>Quantity</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={item.quantity}
+                                                    onChange={(e) =>
+                                                        handleItemChange(index, "quantity", e.target.value)
+                                                    }
+                                                    required
+                                                    className="mobile-input"
+                                                />
+                                            </div>
+                                            <div className="mobile-input-group">
+                                                <label>Price (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={item.price}
+                                                    onChange={(e) =>
+                                                        handleItemChange(index, "price", e.target.value)
+                                                    }
+                                                    required
+                                                    className="mobile-input"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="item-total-mobile">
+                                            Total: ₹{(item.quantity * item.price).toFixed(2)}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Summary Section */}
+                    <div className="form-section summary-section">
+                        <h3 className="section-title">Bill Summary</h3>
+                        
+                        <div className="summary-grid">
+                            <div className="summary-row">
+                                <span className="summary-label">Subtotal</span>
+                                <span className="summary-value">₹{subTotal.toFixed(2)}</span>
+                            </div>
+                            
+                            <div className="summary-row tax-row">
+                                <div className="tax-input-group">
+                                    <label htmlFor="taxPercent" className="summary-label">
+                                        Tax (%)
+                                    </label>
+                                    <input
+                                        id="taxPercent"
+                                        name="taxPercent"
+                                        type="number"
+                                        placeholder="Enter tax %"
+                                        value={form.taxPercent}
+                                        onChange={handleChange}
+                                        min="0"
+                                        step="0.01"
+                                        className="tax-input"
+                                    />
+                                </div>
+                                <span className="summary-value">₹{taxAmount.toFixed(2)}</span>
+                            </div>
+                            
+                            <div className="summary-row total-row">
+                                <span className="total-label">Total Amount</span>
+                                <span className="total-value">₹{total.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="form-actions">
+                        <button 
+                            type="button" 
+                            className="btn-secondary"
+                            onClick={() => {
+                                setItems([{ itemName: "", quantity: 1, price: 0 }]);
+                                setForm({ bookingId: "", taxPercent: "" });
+                            }}
+                        >
+                            Clear All
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="btn-primary"
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner"></span>
+                                    Creating Bill...
+                                </>
+                            ) : (
+                                "Create Bill"
+                            )}
                         </button>
                     </div>
-                ))}
 
-                <button type="button" onClick={addItem}>
-                    ➕ Add Item
-                </button>
+                    {/* Message */}
+                    {message && (
+                        <div className={`message ${messageType}`}>
+                            {message}
+                        </div>
+                    )}
+                </form>
+            </div>
 
-                <hr />
-
-                {/* Totals */}
-                <p>
-                    <strong>Subtotal:</strong> ₹{subTotal.toFixed(2)}
-                </p>
-
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <label>
-                        <strong>Tax (%):</strong>
-                    </label>
-                    <input
-                        type="number"
-                        name="taxPercent"
-                        placeholder="Enter tax %"
-                        value={form.taxPercent}
-                        onChange={handleChange}
-                        min="0"
-                        step="0.01"
-                    />
-                </div>
-
-                <p>
-                    <strong>Tax Amount:</strong> ₹{taxAmount.toFixed(2)}
-                </p>
-
-                <p>
-                    <strong>Total:</strong> ₹{total.toFixed(2)}
-                </p>
-
-                <button type="submit" disabled={loading}>
-                    {loading ? "Saving..." : "Create Bill"}
-                </button>
-            </form>
-
-            {message && <p style={{ marginTop: 15 }}>{message}</p>}
+            {/* Help Text */}
+            <div className="help-text">
+                <p>💡 <strong>Tips:</strong> Add multiple items, set tax percentage, and review total before submission.</p>
+            </div>
         </div>
     );
 };

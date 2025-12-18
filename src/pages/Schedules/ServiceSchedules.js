@@ -33,13 +33,12 @@ function ServiceSchedulePage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [searchType, setSearchType] = useState("name");
     const [loading, setLoading] = useState(true);
-    const [isDoctor, setIsDoctor] = useState(false);
+    // const [isDoctor, setIsDoctor] = useState(false);
     const [userId, setUserId] = useState(null);
     const [selectedSchedule, setSelectedSchedule] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [showReschedule, setShowReschedule] = useState(false);
     const [showBasicTestsModal, setShowBasicTestsModal] = useState(false);
-
     const [rescheduleData, setRescheduleData] = useState({
         date: "",
         time: "",
@@ -52,14 +51,10 @@ function ServiceSchedulePage() {
         sugar: "",
     });
     const [activeFilter, setActiveFilter] = useState("all");
-
-    const storedUser = JSON.parse(localStorage.getItem("userDetails"));
-    // const userId = storedUser?.id || "";
-    setUserId(storedUser?.id || 31);
     const shopDetails = JSON.parse(localStorage.getItem("shopdetails"));
     const serviceId = shopDetails?.id || "";
-    const serviceName = shopDetails?.serviceName || "";
-
+    const userDetails = JSON.parse(localStorage.getItem("user"));
+    const isService = userDetails?.isService;
 
     const navigate = useNavigate();
 
@@ -75,16 +70,15 @@ function ServiceSchedulePage() {
 
     const loadSchedules = async () => {
         try {
-            const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+            // const storedUser = JSON.parse(localStorage.getItem("userDetails"));
+            const storedUser = JSON.parse(localStorage.getItem("user"));
             const uid = storedUser?.id || 31;
-            const isDoc = true;
+            console.log("storged ", uid, "get", storedUser.id);
+
 
             setUserId(uid);
-            setIsDoctor(isDoc);
 
-            const url = isDoc
-                ? `${BASE_URL}/doctor/${uid}`
-                : `${BASE_URL}/service/${serviceId}`;
+            const url = `${BASE_URL}/service/${uid}`;
             const res = await fetch(url);
             const data = await res.json();
 
@@ -106,9 +100,9 @@ function ServiceSchedulePage() {
                 const searchValue = searchTerm.toLowerCase();
                 switch (searchType) {
                     case "name":
-                        return isDoctor
-                            ? (schedule.patientName || "").toLowerCase().includes(searchValue)
-                            : (schedule.doctorName || "").toLowerCase().includes(searchValue);
+                        return isService
+                            ? (schedule.customerName || "").toLowerCase().includes(searchValue)
+                            : (schedule.serviceName || "").toLowerCase().includes(searchValue);
                     case "date":
                         return schedule.date.toLowerCase().includes(searchValue);
                     default:
@@ -232,8 +226,8 @@ function ServiceSchedulePage() {
                     date: formattedDate,
                     time: formattedTime,
                     userId: schedule.userId,
-                    doctorId: schedule.doctorId,
-                    editedBy: isDoctor ? "doctor" : "user",
+                    serviceId: schedule.serviceId,
+                    editedBy: isService ? "Service" : "user",
                 }),
             });
 
@@ -260,59 +254,6 @@ function ServiceSchedulePage() {
         );
     };
 
-    const handleBasicTestsSubmit = async () => {
-        if (!selectedSchedule) return;
-
-        try {
-            // Format date correctly for MySQL (YYYY-MM-DD)
-            const scheduleDate = new Date(selectedSchedule.date);
-            const formattedDate = scheduleDate.toISOString().split('T')[0];
-
-            // Format time correctly (ensure HH:MM:SS format)
-            let formattedTime = selectedSchedule.time;
-            if (formattedTime.length === 5) {
-                formattedTime = `${formattedTime}:00`;
-            }
-
-            const response = await fetch(`${BASE_URL}/${selectedSchedule.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    status: selectedSchedule.status,
-                    remarks: selectedSchedule.remarks || "",
-                    date: formattedDate,
-                    time: formattedTime,
-                    userId: selectedSchedule.userId,
-                    doctorId: selectedSchedule.doctorId,
-                    bloodPressure: basicTestsData.bloodPressure || selectedSchedule.bloodPressure || "",
-                    height: basicTestsData.height || selectedSchedule.height || "",
-                    weight: basicTestsData.weight || selectedSchedule.weight || "",
-                    sugar: basicTestsData.sugar || selectedSchedule.sugar || "",
-                    editedBy: isDoctor ? "doctor" : "user",
-                }),
-            });
-
-            if (response.ok) {
-                loadSchedules();
-                setShowBasicTestsModal(false);
-                setBasicTestsData({ bloodPressure: "", height: "", weight: "", sugar: "" });
-
-                // Update selected schedule locally
-                setSelectedSchedule(prev => ({
-                    ...prev,
-                    bloodPressure: basicTestsData.bloodPressure || prev.bloodPressure,
-                    height: basicTestsData.height || prev.height,
-                    weight: basicTestsData.weight || prev.weight,
-                    sugar: basicTestsData.sugar || prev.sugar,
-                }));
-            } else {
-                const error = await response.json();
-                alert("Failed to save basic tests: " + JSON.stringify(error));
-            }
-        } catch (e) {
-            alert("Error saving basic tests: " + e);
-        }
-    };
 
     const stats = getAppointmentStats();
     const todayStats = getTodayAppointmentsByStatus();
@@ -330,9 +271,9 @@ function ServiceSchedulePage() {
                     <div className="d-flex align-items-center mb-3">
                         <FaUserMd className="text-primary me-2" />
                         <span className="fw-semibold text-truncate">
-                            {isDoctor
-                                ? schedule.patientName || "Unknown Patient"
-                                : schedule.doctorName || "Unknown Doctor"}
+                            {isService
+                                ? schedule.customerName || "Unknown Patient"
+                                : schedule.serviceName || "Unknown Doctor"}
                         </span>
                     </div>
 
@@ -649,12 +590,12 @@ function ServiceSchedulePage() {
                                 <Col xs={12} md={6}>
                                     <div className="mb-3">
                                         <strong className="d-block text-muted small">
-                                            {isDoctor ? "Patient" : "Doctor"}
+                                            {isService ? "Service" : "Patient"}
                                         </strong>
                                         <span className="d-block fs-5 fw-semibold">
-                                            {isDoctor
-                                                ? selectedSchedule.patientName || "Unknown"
-                                                : selectedSchedule.doctorName || "Unknown"}
+                                            {isService
+                                                ? selectedSchedule.serviceName || "Unknown"
+                                                : selectedSchedule.customerName || "Unknown"}
                                         </span>
                                     </div>
                                 </Col>
@@ -686,52 +627,6 @@ function ServiceSchedulePage() {
                                         <span className="fs-5">
                                             {formatDate(selectedSchedule.date)}
                                         </span>
-                                    </div>
-                                </Col>
-
-                                {/* Time with Basic Tests Button */}
-                                <Col xs={12} md={6}>
-                                    <div className="mb-3">
-                                        <strong className="d-block text-muted small">Time</strong>
-                                        <span className="fs-5 d-block mb-2">
-                                            {formatTime(selectedSchedule.time)}
-                                        </span>
-
-                                        {/* Basic Tests Button */}
-                                        <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            className="me-2 mb-2"
-                                            onClick={() => {
-                                                // Pre-fill existing data if available
-                                                setBasicTestsData({
-                                                    bloodPressure: selectedSchedule.bloodPressure || "",
-                                                    height: selectedSchedule.height || "",
-                                                    weight: selectedSchedule.weight || "",
-                                                    sugar: selectedSchedule.sugar || "",
-                                                });
-                                                setShowBasicTestsModal(true);
-                                            }}
-                                        >
-                                            <FaNotesMedical className="me-1" />
-                                            Basic Tests
-                                        </Button>
-
-                                        {/* View Prescription Button */}
-                                        {selectedSchedule?.prescriptionID && (
-                                            <Button
-                                                variant="outline-warning"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setShowModal(false);
-                                                    navigate("/prescription-details1", {
-                                                        state: { appointment: selectedSchedule },
-                                                    });
-                                                }}
-                                            >
-                                                View Prescription
-                                            </Button>
-                                        )}
                                     </div>
                                 </Col>
 
@@ -884,12 +779,12 @@ function ServiceSchedulePage() {
                                 className="flex-fill"
                                 onClick={() => {
                                     setShowModal(false);
-                                    navigate("/prescription", {
+                                    navigate("/ServiceBilling", {
                                         state: { appointment: selectedSchedule },
                                     });
                                 }}
                             >
-                                Prescription
+                                Billing
                             </Button>
 
                             {/* Close */}
@@ -982,182 +877,6 @@ function ServiceSchedulePage() {
                         onClick={handleRescheduleSave}
                     >
                         Save Changes
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Basic Tests Modal */}
-            <Modal
-                show={showBasicTestsModal}
-                onHide={() => {
-                    setShowBasicTestsModal(false);
-                    setBasicTestsData({
-                        bloodPressure: "",
-                        height: "",
-                        weight: "",
-                        sugar: "",
-                    });
-                }}
-                centered
-                size="md"
-            >
-                <Modal.Header closeButton className="bg-info text-white">
-                    <Modal.Title>Basic Tests</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Row>
-                            <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Blood Pressure</Form.Label>
-                                    <InputGroup>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="e.g., 120/80"
-                                            value={basicTestsData.bloodPressure}
-                                            onChange={(e) =>
-                                                setBasicTestsData({
-                                                    ...basicTestsData,
-                                                    bloodPressure: e.target.value,
-                                                })
-                                            }
-                                        />
-                                        <InputGroup.Text>mmHg</InputGroup.Text>
-                                    </InputGroup>
-                                    <Form.Text className="text-muted">
-                                        Format: systolic/diastolic
-                                    </Form.Text>
-                                </Form.Group>
-                            </Col>
-
-                            <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Sugar Level</Form.Label>
-                                    <InputGroup>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="e.g., 110"
-                                            value={basicTestsData.sugar}
-                                            onChange={(e) =>
-                                                setBasicTestsData({
-                                                    ...basicTestsData,
-                                                    sugar: e.target.value,
-                                                })
-                                            }
-                                        />
-                                        <InputGroup.Text>mg/dL</InputGroup.Text>
-                                    </InputGroup>
-                                    <Form.Text className="text-muted">
-                                        Fasting blood sugar
-                                    </Form.Text>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-
-                        <Row>
-                            <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Height</Form.Label>
-                                    <InputGroup>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="e.g., 170"
-                                            value={basicTestsData.height}
-                                            onChange={(e) =>
-                                                setBasicTestsData({
-                                                    ...basicTestsData,
-                                                    height: e.target.value,
-                                                })
-                                            }
-                                        />
-                                        <InputGroup.Text>cm</InputGroup.Text>
-                                    </InputGroup>
-                                </Form.Group>
-                            </Col>
-
-                            <Col xs={12} md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Weight</Form.Label>
-                                    <InputGroup>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="e.g., 70"
-                                            value={basicTestsData.weight}
-                                            onChange={(e) =>
-                                                setBasicTestsData({
-                                                    ...basicTestsData,
-                                                    weight: e.target.value,
-                                                })
-                                            }
-                                        />
-                                        <InputGroup.Text>kg</InputGroup.Text>
-                                    </InputGroup>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-
-                        {/* Show existing values if available */}
-                        {(selectedSchedule?.bloodPressure ||
-                            selectedSchedule?.height ||
-                            selectedSchedule?.weight ||
-                            selectedSchedule?.sugar) && (
-                                <div className="mt-3 p-3 bg-light rounded">
-                                    <h6>Current Values:</h6>
-                                    <Row>
-                                        {selectedSchedule?.bloodPressure && (
-                                            <Col xs={6}>
-                                                <small className="text-muted">BP:</small>
-                                                <div className="fw-semibold">
-                                                    {selectedSchedule.bloodPressure} mmHg
-                                                </div>
-                                            </Col>
-                                        )}
-                                        {selectedSchedule?.sugar && (
-                                            <Col xs={6}>
-                                                <small className="text-muted">Sugar:</small>
-                                                <div className="fw-semibold">
-                                                    {selectedSchedule.sugar} mg/dL
-                                                </div>
-                                            </Col>
-                                        )}
-                                        {selectedSchedule?.height && (
-                                            <Col xs={6}>
-                                                <small className="text-muted">Height:</small>
-                                                <div className="fw-semibold">
-                                                    {selectedSchedule.height} cm
-                                                </div>
-                                            </Col>
-                                        )}
-                                        {selectedSchedule?.weight && (
-                                            <Col xs={6}>
-                                                <small className="text-muted">Weight:</small>
-                                                <div className="fw-semibold">
-                                                    {selectedSchedule.weight} kg
-                                                </div>
-                                            </Col>
-                                        )}
-                                    </Row>
-                                </div>
-                            )}
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        variant="outline-secondary"
-                        onClick={() => {
-                            setShowBasicTestsModal(false);
-                            setBasicTestsData({
-                                bloodPressure: "",
-                                height: "",
-                                weight: "",
-                                sugar: "",
-                            });
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleBasicTestsSubmit}>
-                        Save Tests
                     </Button>
                 </Modal.Footer>
             </Modal>

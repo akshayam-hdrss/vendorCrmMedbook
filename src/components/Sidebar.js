@@ -91,7 +91,7 @@ export default function Sidebar() {
                   <>
                     <li>
                       <NavLink
-                        to="/schedule"
+                        to="/serviceschedule"
                         className={({ isActive }) =>
                           isActive ? "sidebar-link active" : "sidebar-link"
                         }

@@ -23,6 +23,8 @@ import PrescriptionDetails1 from "./pages/Schedules/PrescriptionDetails1";
 import Home from "./pages/Home/Home";
 import CreateBilling from "./pages/ServiceBilling/CreateBilling";
 import ServiceSchedulePage from "./pages/Schedules/ServiceSchedules";
+import Serviceproduct from "./pages/Manage/Serviceproduct";
+import BillingHistory from "./pages/ServiceBilling/BillingHistory";
 
 // Layout component for pages WITH sidebar
 function AppLayout({ children }) {
@@ -139,6 +141,16 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/serviceproducts"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Serviceproduct />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/product/:productId"
@@ -194,7 +206,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-  
+
 
         <Route
           path="/ServiceBilling"
@@ -202,6 +214,27 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <CreateBilling />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/serviceproducts"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Serviceproduct />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/billing-history"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <BillingHistory />
               </AppLayout>
             </ProtectedRoute>
           }

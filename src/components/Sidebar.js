@@ -75,7 +75,7 @@ export default function Sidebar() {
           ) : (
             <>
               {/* Doctor Menu */}
-              {isDoctor ? (
+              {isDoctor ? (<>
                 <li>
                   <NavLink
                     to="/schedule"
@@ -86,6 +86,20 @@ export default function Sidebar() {
                     <FaCalendarAlt className="me-2" /> Schedule
                   </NavLink>
                 </li>
+
+
+                <li>
+                  <NavLink
+                    to="/prescription"
+                    className={({ isActive }) =>
+                      isActive ? "sidebar-link active" : "sidebar-link"
+                    }
+                  >
+                    <FaFilePrescription className="me-2" /> Prescription
+                  </NavLink>
+                </li>
+              </>
+
               ) :
                 isService ? (
                   <>
@@ -111,29 +125,54 @@ export default function Sidebar() {
                       </NavLink>
                     </li>
                   </>
-                ) : null}
+                ) : <>
+                  <li>
+                    <NavLink
+                      to="/schedule"
+                      className={({ isActive }) =>
+                        isActive ? "sidebar-link active" : "sidebar-link"
+                      }
+                    >
+                      <FaCalendarAlt className="me-2" /> Schedule
+                    </NavLink>
+                  </li>
 
-              {/* Prescription */}
-              <li>
-                <NavLink
-                  to="/prescription"
-                  className={({ isActive }) =>
-                    isActive ? "sidebar-link active" : "sidebar-link"
-                  }
-                >
-                  <FaFilePrescription className="me-2" /> Prescription
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/received-rx"
-                  className={({ isActive }) =>
-                    isActive ? "sidebar-link active" : "sidebar-link"
-                  }
-                >
-                  <FaFilePrescription className="me-2" /> Received-Rx
-                </NavLink>
-              </li>
+
+                  <li>
+                    <NavLink
+                      to="/prescription"
+                      className={({ isActive }) =>
+                        isActive ? "sidebar-link active" : "sidebar-link"
+                      }
+                    >
+                      <FaFilePrescription className="me-2" /> Prescription
+                    </NavLink>
+                  </li>
+
+                  <li>
+                    <NavLink
+                      to="/ServiceBilling"
+                      className={({ isActive }) =>
+                        isActive ? "sidebar-link active" : "sidebar-link"
+                      }
+                    >
+                      <FaFilePrescription className="me-2" /> Billing
+                    </NavLink>
+                  </li>
+
+
+                  <li>
+                    <NavLink
+                      to="/received-rx"
+                      className={({ isActive }) =>
+                        isActive ? "sidebar-link active" : "sidebar-link"
+                      }
+                    >
+                      <FaFilePrescription className="me-2" /> Received-Rx
+                    </NavLink>
+                  </li>
+
+                </>}
               {/* Manage */}
               <li>
                 <NavLink

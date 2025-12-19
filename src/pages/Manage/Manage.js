@@ -12,17 +12,11 @@ const Manage = () => {
   const isService = storedUser?.isService;
 
   // 🎯 Dynamic values
-  const primaryBtnLabel = isDoctor
-    ? "Medication Details"
-    : isService
-      ? "Product & Service"
-      : "Medication Details";
+  const primaryBtnLabel = isService
+    ? "Product & Service"
+    : "Medication Details";
 
-  const primaryBtnRoute = isDoctor
-    ? "/medicalproducts"
-    : isService
-      ? "/create-billing"
-      : "/medicalproducts";
+  const primaryBtnRoute = isService ? "/serviceproducts" : "/medicalproducts";
 
   const secondaryBtnLabel = isService
     ? "Billing History"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./CreateBilling.css";
 import { useLocation } from "react-router-dom";
@@ -37,6 +37,27 @@ const CreateBilling = () => {
   const [messageType, setMessageType] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [pdfPreview, setPdfPreview] = useState(null);
+  const [products, setProducts] = useState([]);
+
+  const fetchProducts = async () => {
+    if (!serviceId) return console.error("User ID not found!");
+
+    try {
+      const res = await axios.get(`https://medbook-backend-1.onrender.com/api/medical-product/${serviceId}`);
+      // Ensure price is always a number (avoid string issues)
+      const formatted = res.data.map((p) => ({
+        ...p,
+        price: parseFloat(p.price) || 0,
+      }));
+      setProducts(formatted);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   // Handle basic input
   const handleChange = (e) => {
@@ -46,9 +67,24 @@ const CreateBilling = () => {
   // Handle item change
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...items];
-    updatedItems[index][field] = field === "itemName" ? value : Number(value);
+
+    if (field === "itemName") {
+      updatedItems[index].itemName = value;
+
+      const selectedProduct = products.find(
+        (p) => p.productName === value
+      );
+
+      if (selectedProduct) {
+        updatedItems[index].price = Number(selectedProduct.price);
+      }
+    } else {
+      updatedItems[index][field] = Number(value);
+    }
+
     setItems(updatedItems);
   };
+
 
   // Add item
   const addItem = () => {
@@ -585,7 +621,8 @@ const CreateBilling = () => {
                   <div className="table-col col-name">
                     <input
                       type="text"
-                      placeholder="Item name"
+                      list="product-list"
+                      placeholder="Search item"
                       value={item.itemName}
                       onChange={(e) =>
                         handleItemChange(index, "itemName", e.target.value)
@@ -593,6 +630,7 @@ const CreateBilling = () => {
                       required
                       className="table-input"
                     />
+
                   </div>
                   <div className="table-col col-qty">
                     <input
@@ -639,6 +677,15 @@ const CreateBilling = () => {
                 </div>
               ))}
             </div>
+            <datalist id="product-list">
+              {products.map((product) => (
+                <option
+                  key={product.id}
+                  value={product.productName}
+                  data-price={product.price}
+                />
+              ))}
+            </datalist>
 
             {/* Mobile View for Items */}
             <div className="items-list mobile-view">
@@ -661,7 +708,8 @@ const CreateBilling = () => {
                       <label>Item Name</label>
                       <input
                         type="text"
-                        placeholder="Item name"
+                        list="product-list"
+                        placeholder="Search item"
                         value={item.itemName}
                         onChange={(e) =>
                           handleItemChange(index, "itemName", e.target.value)
@@ -669,6 +717,8 @@ const CreateBilling = () => {
                         required
                         className="mobile-input"
                       />
+
+
                     </div>
                     <div className="mobile-row">
                       <div className="mobile-input-group">

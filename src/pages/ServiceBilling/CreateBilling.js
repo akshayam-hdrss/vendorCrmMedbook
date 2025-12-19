@@ -39,6 +39,13 @@ const CreateBilling = () => {
   const [pdfPreview, setPdfPreview] = useState(null);
   const [products, setProducts] = useState([]);
 
+  // Autocomplete states
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [currentItemIndex, setCurrentItemIndex] = useState(null);
+  const [activeInputType, setActiveInputType] = useState("desktop"); // "desktop" or "mobile"
+
   const fetchProducts = async () => {
     if (!serviceId) return console.error("User ID not found!");
 
@@ -64,19 +71,34 @@ const CreateBilling = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Handle item change
-  const handleItemChange = (index, field, value) => {
+  // Handle item change with autocomplete
+  const handleItemChange = (index, field, value, inputType = "desktop") => {
     const updatedItems = [...items];
 
     if (field === "itemName") {
       updatedItems[index].itemName = value;
 
-      const selectedProduct = products.find(
-        (p) => p.productName === value
-      );
+      // Show suggestions when typing
+      if (value.length > 0) {
+        const filtered = products.filter((p) =>
+          p.productName.toLowerCase().includes(value.toLowerCase())
+        );
+        setFilteredProducts(filtered);
+        setShowSuggestions(true);
+        setCurrentItemIndex(index);
+        setActiveSuggestionIndex(-1);
+        setActiveInputType(inputType);
+      } else {
+        setShowSuggestions(false);
+      }
 
+      // Auto-fill price if exact product is selected from datalist
+      const selectedProduct = products.find(
+        (p) => p.productName.toLowerCase() === value.toLowerCase()
+      );
       if (selectedProduct) {
         updatedItems[index].price = Number(selectedProduct.price);
+        setShowSuggestions(false);
       }
     } else {
       updatedItems[index][field] = Number(value);
@@ -85,6 +107,50 @@ const CreateBilling = () => {
     setItems(updatedItems);
   };
 
+  // Handle suggestion selection
+  const handleSuggestionClick = (index, product, inputType) => {
+    const updatedItems = [...items];
+    updatedItems[index].itemName = product.productName;
+    updatedItems[index].price = Number(product.price);
+    setItems(updatedItems);
+    setShowSuggestions(false);
+    setCurrentItemIndex(null);
+
+    // Focus on quantity input after selection (for better UX)
+    setTimeout(() => {
+      const quantityInput = document.querySelector(
+        `.item-card:nth-child(${index + 1}) input[type="number"], .table-row:nth-child(${index + 2}) .col-qty input`
+      );
+      if (quantityInput) quantityInput.focus();
+    }, 10);
+  };
+
+  // Add keyboard navigation for suggestions
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!showSuggestions) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveSuggestionIndex(prev =>
+          prev < filteredProducts.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveSuggestionIndex(prev =>
+          prev > 0 ? prev - 1 : filteredProducts.length - 1
+        );
+      } else if (e.key === 'Enter' && activeSuggestionIndex >= 0) {
+        e.preventDefault();
+        handleSuggestionClick(currentItemIndex, filteredProducts[activeSuggestionIndex], activeInputType);
+      } else if (e.key === 'Escape') {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showSuggestions, activeSuggestionIndex, filteredProducts, currentItemIndex, activeInputType]);
 
   // Add item
   const addItem = () => {
@@ -107,7 +173,6 @@ const CreateBilling = () => {
   const taxAmount = (subTotal * taxPercent) / 100;
   const total = subTotal + taxAmount;
 
-  // 📄 Generate PDF with better design
   // 📄 Generate PDF with better design
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -149,7 +214,6 @@ const CreateBilling = () => {
     // Get only valid items
     const validItems = items.filter(
       (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
     );
 
     // Create table data
@@ -262,7 +326,6 @@ const CreateBilling = () => {
   const handlePreview = () => {
     const validItems = items.filter(
       (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
     );
     if (validItems.length === 0) {
       setMessage("❌ Please add at least one valid item before preview.");
@@ -306,7 +369,6 @@ const CreateBilling = () => {
     // Validate items
     const validItems = items.filter(
       (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
     );
     if (validItems.length === 0) {
       setMessage("❌ Please add at least one valid item.");
@@ -416,6 +478,7 @@ const CreateBilling = () => {
 
   // Close preview
   const closePreview = () => {
+    setShowSuggestions(false);
     setShowPreview(false);
     if (pdfPreview) {
       URL.revokeObjectURL(pdfPreview);
@@ -423,11 +486,22 @@ const CreateBilling = () => {
     }
   };
 
+  // Click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.autocomplete-wrapper') && !e.target.closest('.autocomplete-dropdown')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   // Invoice Preview Component (Simple version)
   const InvoicePreview = ({ form, items, subTotal, taxAmount, total }) => {
     const validItems = items.filter(
       (item) => item.itemName.trim() !== "" && Number(item.quantity) > 0
-
     );
 
     return (
@@ -619,18 +693,59 @@ const CreateBilling = () => {
               {items.map((item, index) => (
                 <div key={index} className="table-row">
                   <div className="table-col col-name">
-                    <input
-                      type="text"
-                      list="product-list"
-                      placeholder="Search item"
-                      value={item.itemName}
-                      onChange={(e) =>
-                        handleItemChange(index, "itemName", e.target.value)
-                      }
-                      required
-                      className="table-input"
-                    />
+                    <div className="autocomplete-wrapper">
+                      <input
+                        type="text"
+                        list="product-list"
+                        placeholder="Search item..."
+                        value={item.itemName}
+                        onChange={(e) =>
+                          handleItemChange(index, "itemName", e.target.value, "desktop")
+                        }
+                        onFocus={() => {
+                          if (item.itemName) {
+                            const filtered = products.filter((p) =>
+                              p.productName.toLowerCase().includes(item.itemName.toLowerCase())
+                            );
+                            setFilteredProducts(filtered);
+                            setShowSuggestions(true);
+                            setCurrentItemIndex(index);
+                            setActiveInputType("desktop");
+                          }
+                        }}
+                        required
+                        className="table-input"
+                        autoComplete="off"
+                      />
 
+                      {/* Desktop Autocomplete Dropdown */}
+                      {showSuggestions && currentItemIndex === index && activeInputType === "desktop" && filteredProducts.length > 0 && (
+                        <div className="autocomplete-dropdown desktop-dropdown">
+                          {filteredProducts.slice(0, 6).map((product, idx) => (
+                            <div
+                              key={product.id}
+                              className={`suggestion-item ${idx === activeSuggestionIndex ? "active" : ""
+                                }`}
+                              onClick={() => handleSuggestionClick(index, product, "desktop")}
+                              onMouseEnter={() => setActiveSuggestionIndex(idx)}
+                            >
+                              <div className="suggestion-main">
+                                <span className="product-name">{product.productName}</span>
+                                {/* <span className="product-price">₹{product.price}</span> */}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {showSuggestions && currentItemIndex === index && activeInputType === "desktop" && filteredProducts.length === 0 && item.itemName && (
+                        <div className="autocomplete-dropdown desktop-dropdown">
+                          <div className="no-suggestions">
+                            No products found. Continue typing to add as new item.
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="table-col col-qty">
                     <input
@@ -677,7 +792,7 @@ const CreateBilling = () => {
                 </div>
               ))}
             </div>
-            <datalist id="product-list">
+            {/* <datalist id="product-list">
               {products.map((product) => (
                 <option
                   key={product.id}
@@ -685,7 +800,7 @@ const CreateBilling = () => {
                   data-price={product.price}
                 />
               ))}
-            </datalist>
+            </datalist> */}
 
             {/* Mobile View for Items */}
             <div className="items-list mobile-view">
@@ -706,19 +821,62 @@ const CreateBilling = () => {
                   <div className="item-card-body">
                     <div className="mobile-input-group">
                       <label>Item Name</label>
-                      <input
-                        type="text"
-                        list="product-list"
-                        placeholder="Search item"
-                        value={item.itemName}
-                        onChange={(e) =>
-                          handleItemChange(index, "itemName", e.target.value)
-                        }
-                        required
-                        className="mobile-input"
-                      />
+                      <div className="autocomplete-wrapper">
+                        <input
+                          type="text"
+                          list="product-list"
+                          placeholder="Search item..."
+                          value={item.itemName}
+                          onChange={(e) =>
+                            handleItemChange(index, "itemName", e.target.value, "mobile")
+                          }
+                          onFocus={() => {
+                            if (item.itemName) {
+                              const filtered = products.filter((p) =>
+                                p.productName.toLowerCase().includes(item.itemName.toLowerCase())
+                              );
+                              setFilteredProducts(filtered);
+                              setShowSuggestions(true);
+                              setCurrentItemIndex(index);
+                              setActiveInputType("mobile");
+                            }
+                          }}
+                          onBlur={() => {
+                            setTimeout(() => setShowSuggestions(false), 200);
+                          }}
+                          required
+                          className="mobile-input"
+                          autoComplete="off"
+                        />
 
+                        {/* Mobile Autocomplete Dropdown */}
+                        {showSuggestions && currentItemIndex === index && activeInputType === "mobile" && filteredProducts.length > 0 && (
+                          <div className="autocomplete-dropdown mobile-dropdown">
+                            {filteredProducts.slice(0, 6).map((product, idx) => (
+                              <div
+                                key={product.id}
+                                className={`suggestion-item ${idx === activeSuggestionIndex ? "active" : ""
+                                  }`}
+                                onClick={() => handleSuggestionClick(index, product, "mobile")}
+                                onMouseEnter={() => setActiveSuggestionIndex(idx)}
+                              >
+                                <div className="suggestion-main">
+                                  <span className="product-name">{product.productName}</span>
+                                  <span className="product-price">₹{product.price}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
+                        {showSuggestions && currentItemIndex === index && activeInputType === "mobile" && filteredProducts.length === 0 && item.itemName && (
+                          <div className="autocomplete-dropdown mobile-dropdown">
+                            <div className="no-suggestions">
+                              No products found. Continue typing to add as new item.
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="mobile-row">
                       <div className="mobile-input-group">
@@ -811,18 +969,20 @@ const CreateBilling = () => {
                 });
                 setMessage("");
                 setMessageType("");
+                setShowSuggestions(false);
+                setFilteredProducts([]);
               }}
             >
               Clear All
             </button>
-            {/* <button
+            <button
               type="button"
               className="btn-preview"
               onClick={handlePreview}
               disabled={loading}
             >
               Preview Bill
-            </button> */}
+            </button>
             <button type="submit" disabled={loading} className="btn-primary">
               {loading ? (
                 <>

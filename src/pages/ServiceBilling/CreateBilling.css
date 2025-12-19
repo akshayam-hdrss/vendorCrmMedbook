@@ -1410,5 +1410,264 @@
     .invoice-actions {
         display: none;
     }
+
+    
+}
+
+/* Autocomplete Styles */
+.autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-top: 2px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.desktop-dropdown {
+  width: 100%;
+  min-width: 200px;
+}
+
+.mobile-dropdown {
+  width: 100%;
+  position: fixed !important;
+  left: 16px;
+  right: 16px;
+  width: auto;
+  max-width: calc(100vw - 32px);
+  z-index: 9999;
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background-color: #f0f7ff;
+  border-left: 3px solid #1890ff;
+}
+
+.suggestion-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-price {
+  font-weight: 600;
+  color: #1890ff;
+  font-size: 13px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.no-suggestions {
+  padding: 16px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Desktop View Input */
+.table-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+/* Mobile View Input */
+.mobile-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  background: white;
+}
+
+.mobile-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+.mobile-input-group {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.mobile-input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mobile-row {
+  display: flex;
+  gap: 12px;
+}
+
+.mobile-row .mobile-input-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Scrollbar styling */
+.autocomplete-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Mobile View Styles */
+.mobile-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-view {
+    display: none;
+  }
+  
+  .mobile-view {
+    display: block;
+  }
+  
+  .item-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  
+  .item-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .item-card-header span {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+  }
+  
+  .item-card-body {
+    padding: 16px;
+  }
+  
+  .item-total-mobile {
+    text-align: right;
+    font-weight: 600;
+    color: #1890ff;
+    font-size: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e0e0e0;
+  }
+  
+  .btn-remove {
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .mobile-row {
+    gap: 16px;
+  }
+  
+  .mobile-input {
+    padding: 12px 14px;
+  }
+}
+
+/* Hide datalist arrow on mobile */
+@media (max-width: 768px) {
+  input[list]::-webkit-calendar-picker-indicator {
+    display: none;
+  }
 }
 }

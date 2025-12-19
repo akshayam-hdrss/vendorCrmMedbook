@@ -975,14 +975,7 @@ const CreateBilling = () => {
             >
               Clear All
             </button>
-            <button
-              type="button"
-              className="btn-preview"
-              onClick={handlePreview}
-              disabled={loading}
-            >
-              Preview Bill
-            </button>
+            {/*  */}
             <button type="submit" disabled={loading} className="btn-primary">
               {loading ? (
                 <>
